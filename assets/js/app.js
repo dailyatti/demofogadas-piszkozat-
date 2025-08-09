@@ -349,10 +349,19 @@ function clearForm() {
 function updateBetOutcome(betId, newOutcome) {
   const bet = APP_STATE.bets.find(b => b.id === betId);
   if (!bet || bet.outcome === newOutcome) return;
+  const tipsterData = APP_STATE.tipstersData[bet.tipster];
+  if (!tipsterData) return;
 
-  updateCapital(bet, 'revert');
+  // Stake was already deducted when the bet was placed (pending baseline).
+  // Only adjust the payout part when outcome toggles to/from 'win'.
+  const payout = bet.betAmount * bet.odds;
+  if (bet.outcome === 'win') {
+    tipsterData.current_capital -= payout;
+  }
+  if (newOutcome === 'win') {
+    tipsterData.current_capital += payout;
+  }
   bet.outcome = newOutcome;
-  updateCapital(bet, 'apply');
 
   saveToStorage();
   refreshUI();
@@ -380,24 +389,18 @@ function updateCapital(bet, action) {
 
   switch (action) {
     case 'place':
+      // On placement, deduct stake immediately; payout handled when marking 'win'
       tipsterData.current_capital -= bet.betAmount;
-      if (bet.outcome === 'win') {
-        tipsterData.current_capital += bet.betAmount * bet.odds;
-      }
       break;
 
     case 'revert':
-      if (bet.outcome === 'win') {
-        tipsterData.current_capital -= bet.betAmount * bet.odds;
-      }
+      // Revert to before placement
       tipsterData.current_capital += bet.betAmount;
       break;
 
     case 'apply':
+      // Apply again baseline (stake deduction)
       tipsterData.current_capital -= bet.betAmount;
-      if (bet.outcome === 'win') {
-        tipsterData.current_capital += bet.betAmount * bet.odds;
-      }
       break;
   }
 
