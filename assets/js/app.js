@@ -234,15 +234,21 @@ function setupEventListeners() {
       const p = 1/dec * 100;
       DOM.impliedProb.textContent = p.toFixed(2) + '%';
     };
+    // General converters
+    function getDecimalFrom(value, format) {
+      if (format === 'dec') return parseFloat(value);
+      const a = parseFloat(value);
+      if (!isFinite(a)) return NaN;
+      return a > 0 ? (1 + a/100) : (1 + 100/Math.abs(a));
+    }
+    function getAmericanFromDecimal(dec) {
+      if (!isFinite(dec) || dec <= 1) return NaN;
+      return dec >= 2 ? Math.round((dec - 1) * 100) : -Math.round(100 / (dec - 1));
+    }
+
     window.getDecimalOddsFromInput = function getDecimalOddsFromInput() {
       const fmt = DOM.oddsFormatSelect.value;
-      if (fmt === 'dec') {
-        return parseFloat(DOM.oddsInput.value);
-      } else {
-        const a = parseFloat(DOM.oddsInput.value);
-        if (!isFinite(a)) return NaN;
-        return a > 0 ? (1 + a/100) : (1 + 100/Math.abs(a));
-      }
+      return getDecimalFrom(DOM.oddsInput.value, fmt);
     };
     window.setOddsByDecimal = function setOddsByDecimal(dec) {
       if (!isFinite(dec)) return;
@@ -253,7 +259,7 @@ function setupEventListeners() {
         DOM.oddsInput.min = '1.01';
         DOM.oddsInput.value = Number(dec).toFixed(2);
       } else {
-        const amer = dec >= 2 ? Math.round((dec - 1) * 100) : -Math.round(100 / (dec - 1));
+        const amer = getAmericanFromDecimal(dec);
         DOM.oddsInput.type = 'text';
         DOM.oddsInput.value = String(amer);
       }
@@ -269,10 +275,19 @@ function setupEventListeners() {
       updateOddsDerived();
     };
     DOM.oddsInput.addEventListener('input', updateOddsDerived);
+    // tárold az előző formátumot, hogy pontos konverzió legyen
+    DOM.oddsFormatSelect.addEventListener('focus', () => {
+      DOM.oddsFormatSelect.dataset.prev = DOM.oddsFormatSelect.value;
+    });
+    DOM.oddsFormatSelect.addEventListener('mousedown', () => {
+      DOM.oddsFormatSelect.dataset.prev = DOM.oddsFormatSelect.value;
+    });
     DOM.oddsFormatSelect.addEventListener('change', () => {
-      const fmt = DOM.oddsFormatSelect.value;
-      const dec = getDecimalOddsFromInput();
+      const prevFmt = DOM.oddsFormatSelect.dataset.prev || (DOM.oddsFormatSelect.value === 'dec' ? 'amer' : 'dec');
+      const currentValue = DOM.oddsInput.value;
+      const dec = getDecimalFrom(currentValue, prevFmt);
       setOddsByDecimal(dec);
+      DOM.oddsFormatSelect.dataset.prev = DOM.oddsFormatSelect.value;
       updateOddsDerived();
     });
     updateOddsDerived();
