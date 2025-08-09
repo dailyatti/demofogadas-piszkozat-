@@ -234,6 +234,31 @@ function setupEventListeners() {
       const p = 1/dec * 100;
       DOM.impliedProb.textContent = p.toFixed(2) + '%';
     };
+    window.getDecimalOddsFromInput = function getDecimalOddsFromInput() {
+      const fmt = DOM.oddsFormatSelect.value;
+      if (fmt === 'dec') {
+        return parseFloat(DOM.oddsInput.value);
+      } else {
+        const a = parseFloat(DOM.oddsInput.value);
+        if (!isFinite(a)) return NaN;
+        return a > 0 ? (1 + a/100) : (1 + 100/Math.abs(a));
+      }
+    };
+    window.setOddsByDecimal = function setOddsByDecimal(dec) {
+      if (!isFinite(dec)) return;
+      const fmt = DOM.oddsFormatSelect.value;
+      if (fmt === 'dec') {
+        DOM.oddsInput.type = 'number';
+        DOM.oddsInput.step = '0.01';
+        DOM.oddsInput.min = '1.01';
+        DOM.oddsInput.value = Number(dec).toFixed(2);
+      } else {
+        const amer = dec >= 2 ? Math.round((dec - 1) * 100) : -Math.round(100 / (dec - 1));
+        DOM.oddsInput.type = 'text';
+        DOM.oddsInput.value = String(amer);
+      }
+      updateOddsDerived();
+    };
     const syncOddsToFormat = () => {
       let dec;
       if (DOM.oddsFormatSelect.value === 'dec') {
@@ -246,25 +271,8 @@ function setupEventListeners() {
     DOM.oddsInput.addEventListener('input', updateOddsDerived);
     DOM.oddsFormatSelect.addEventListener('change', () => {
       const fmt = DOM.oddsFormatSelect.value;
-      let dec = parseFloat(DOM.oddsInput.value);
-      if (fmt === 'amer' && isFinite(dec) && dec > 1) {
-        // display american
-        const amer = dec >= 2 ? Math.round((dec - 1) * 100) : -Math.round(100 / (dec - 1));
-        DOM.oddsInput.type = 'text';
-        DOM.oddsInput.value = String(amer);
-      }
-      if (fmt === 'dec') {
-        let val = parseFloat(DOM.oddsInput.value);
-        if (!isFinite(val)) {
-          // if previously amer
-          const a = parseFloat(DOM.oddsInput.value);
-          if (a > 0) dec = 1 + a/100; else dec = 1 + 100/Math.abs(a);
-        } else dec = val;
-        DOM.oddsInput.type = 'number';
-        DOM.oddsInput.step = '0.01';
-        DOM.oddsInput.min = '1.01';
-        if (isFinite(dec)) DOM.oddsInput.value = dec.toFixed(2);
-      }
+      const dec = getDecimalOddsFromInput();
+      setOddsByDecimal(dec);
       updateOddsDerived();
     });
     updateOddsDerived();
@@ -345,13 +353,14 @@ function handleAddBet(e) {
     return;
   }
 
+  const decOddsForSave = getDecimalOddsFromInput();
   const bet = {
     id: generateId(),
     tipster: tipster,
     sport: DOM.sportSelect.value,
     team: DOM.teamInput.value.trim(),
     betAmount: betAmount,
-    odds: parseFloat(DOM.oddsInput.value),
+    odds: decOddsForSave,
     outcome: DOM.outcomeSelect.value,
     date: DOM.betDateInput.value || new Date().toISOString(),
     notes: DOM.notesInput.value.trim()
@@ -385,8 +394,7 @@ function validateBetForm() {
     { element: DOM.tipsterSelect, error: 'Kérjük válasszon tippadót' },
     { element: DOM.sportSelect, error: 'Kérjük válasszon sportágat' },
     { element: DOM.teamInput, error: 'Kérjük adja meg a csapat nevét' },
-    { element: DOM.betAmountInput, error: 'Érvénytelen tét összeg', validator: (v) => parseFloat(v) > 0 },
-    { element: DOM.oddsInput, error: 'Érvénytelen szorzó', validator: (v) => parseFloat(v) >= 1.01 }
+    { element: DOM.betAmountInput, error: 'Érvénytelen tét összeg', validator: (v) => parseFloat(v) > 0 }
   ];
 
   fields.forEach(field => {
@@ -404,6 +412,19 @@ function validateBetForm() {
     }
   });
 
+  // Odds validáció formátum szerint
+  const oddsErrorEl = DOM.oddsInput.parentElement.querySelector('.form-error');
+  const decOdds = getDecimalOddsFromInput();
+  if (!(isFinite(decOdds) && decOdds >= 1.01)) {
+    oddsErrorEl.classList.remove('hidden');
+    oddsErrorEl.textContent = 'Érvénytelen szorzó';
+    DOM.oddsInput.classList.add('error');
+    isValid = false;
+  } else {
+    oddsErrorEl.classList.add('hidden');
+    DOM.oddsInput.classList.remove('error');
+  }
+
   return isValid;
 }
 
@@ -413,7 +434,7 @@ function quickAddBet() {
   DOM.sportSelect.value = SPORTS[0];
   DOM.teamInput.value = 'Gyors Fogadás';
   DOM.betAmountInput.value = '10';
-  DOM.oddsInput.value = '1.85';
+  setOddsByDecimal(1.85);
   DOM.outcomeSelect.value = 'pending';
   DOM.teamInput.focus();
 }
@@ -1532,7 +1553,8 @@ function showModal(title, message, type = 'alert', callback = null) {
     DOM.modalInput.focus();
   }
 
-  DOM.modalConfirmBtn.onclick = () => {
+  DOM.modalConfirmBtn.onclick = (e) => {
+    e.stopPropagation();
     try {
       if (type === 'prompt' && callback) {
         callback(DOM.modalInput.value);
@@ -1545,6 +1567,13 @@ function showModal(title, message, type = 'alert', callback = null) {
       closeModal();
     }
   };
+  // Also close on Enter when not prompt, and on Enter inside prompt confirm
+  const keyHandler = (ke) => {
+    if (ke.key === 'Enter') {
+      DOM.modalConfirmBtn.click();
+    }
+  };
+  document.addEventListener('keydown', keyHandler, { once: true });
 }
 
 function closeModal() {
