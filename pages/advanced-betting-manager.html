@@ -102,22 +102,7 @@
         </div>
       </div>
 
-      <!-- Charts -->
-      <div class="grid grid-2 mt-4">
-        <div class="card">
-          <h3>Profit Trend</h3>
-          <div class="chart-container">
-            <canvas id="profitChart"></canvas>
-          </div>
-        </div>
-        
-        <div class="card">
-          <h3>Sportág Megoszlás</h3>
-          <div class="chart-container">
-            <canvas id="sportChart"></canvas>
-          </div>
-        </div>
-      </div>
+      <!-- Charts removed as requested -->
     </section>
 
     <!-- Add New Bet Section -->
@@ -168,6 +153,14 @@
             <label class="form-label" for="oddsInput">Szorzó *</label>
             <input type="number" id="oddsInput" class="form-input" step="0.01" min="1.01" placeholder="1.85" required>
             <span class="form-error hidden">Érvénytelen szorzó</span>
+            <div class="mt-1" style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
+              <label for="oddsFormatSelect" class="text-muted">Formátum:</label>
+              <select id="oddsFormatSelect" class="form-select" style="max-width:160px;">
+                <option value="dec">Decimális</option>
+                <option value="amer">Amerikai</option>
+              </select>
+              <span class="text-muted">Implikált valószínűség: <strong id="impliedProb">--%</strong></span>
+            </div>
           </div>
         </div>
         
@@ -315,12 +308,17 @@
               <polyline points="15 18 9 12 15 6"></polyline>
             </svg>
           </button>
-          <span class="badge badge-info" id="currentPage">1</span>
+          <div id="pageNumbers" class="btn-group"></div>
           <button class="btn btn-sm btn-secondary" id="nextPageBtn">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="9 18 15 12 9 6"></polyline>
             </svg>
           </button>
+          <select id="itemsPerPageSelect" class="form-select" style="max-width:120px;">
+            <option value="10">10 / oldal</option>
+            <option value="25">25 / oldal</option>
+            <option value="50">50 / oldal</option>
+          </select>
         </div>
       </div>
     </section>

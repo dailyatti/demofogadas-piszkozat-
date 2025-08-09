@@ -84,6 +84,9 @@ function cacheDOMElements() {
   DOM.outcomeSelect = document.getElementById('outcomeSelect');
   DOM.betDateInput = document.getElementById('betDateInput');
   DOM.notesInput = document.getElementById('notesInput');
+  // Odds helpers
+  DOM.oddsFormatSelect = document.getElementById('oddsFormatSelect');
+  DOM.impliedProb = document.getElementById('impliedProb');
 
   // Filters
   DOM.filterBtn = document.getElementById('filterBtn');
@@ -116,6 +119,8 @@ function cacheDOMElements() {
   DOM.totalInitialCapital = document.getElementById('totalInitialCapital');
   DOM.betsCount = document.getElementById('betsCount');
   DOM.currentPage = document.getElementById('currentPage');
+  DOM.pageNumbers = document.getElementById('pageNumbers');
+  DOM.itemsPerPageSelect = document.getElementById('itemsPerPageSelect');
 
   // Buttons
   DOM.quickAddBtn = document.getElementById('quickAddBtn');
@@ -169,6 +174,13 @@ function setupEventListeners() {
   // Pagination
   DOM.prevPageBtn.addEventListener('click', () => changePage(-1));
   DOM.nextPageBtn.addEventListener('click', () => changePage(1));
+  if (DOM.itemsPerPageSelect) {
+    DOM.itemsPerPageSelect.addEventListener('change', (e) => {
+      APP_STATE.itemsPerPage = parseInt(e.target.value, 10) || 10;
+      APP_STATE.currentPage = 1;
+      refreshUI();
+    });
+  }
 
   // Stats
   DOM.refreshStatsBtn.addEventListener('click', refreshStatistics);
@@ -203,6 +215,60 @@ function setupEventListeners() {
 
   // Keyboard shortcuts
   document.addEventListener('keydown', handleKeyboardShortcuts);
+
+  // Odds helpers
+  if (DOM.oddsInput && DOM.oddsFormatSelect && DOM.impliedProb) {
+    const updateOddsDerived = () => {
+      let val = DOM.oddsInput.value.trim();
+      const fmt = DOM.oddsFormatSelect.value;
+      let dec = 0;
+      if (!val) { DOM.impliedProb.textContent = '--%'; return; }
+      if (fmt === 'dec') {
+        dec = parseFloat(val);
+      } else if (fmt === 'amer') {
+        const a = parseFloat(val);
+        if (a > 0) dec = 1 + a/100;
+        else dec = 1 + 100/Math.abs(a);
+      }
+      if (!isFinite(dec) || dec <= 1) { DOM.impliedProb.textContent = '--%'; return; }
+      const p = 1/dec * 100;
+      DOM.impliedProb.textContent = p.toFixed(2) + '%';
+    };
+    const syncOddsToFormat = () => {
+      let dec;
+      if (DOM.oddsFormatSelect.value === 'dec') {
+        // keep as is, just update implied
+      } else {
+        // when switching to amer, convert current dec -> amer for display
+      }
+      updateOddsDerived();
+    };
+    DOM.oddsInput.addEventListener('input', updateOddsDerived);
+    DOM.oddsFormatSelect.addEventListener('change', () => {
+      const fmt = DOM.oddsFormatSelect.value;
+      let dec = parseFloat(DOM.oddsInput.value);
+      if (fmt === 'amer' && isFinite(dec) && dec > 1) {
+        // display american
+        const amer = dec >= 2 ? Math.round((dec - 1) * 100) : -Math.round(100 / (dec - 1));
+        DOM.oddsInput.type = 'text';
+        DOM.oddsInput.value = String(amer);
+      }
+      if (fmt === 'dec') {
+        let val = parseFloat(DOM.oddsInput.value);
+        if (!isFinite(val)) {
+          // if previously amer
+          const a = parseFloat(DOM.oddsInput.value);
+          if (a > 0) dec = 1 + a/100; else dec = 1 + 100/Math.abs(a);
+        } else dec = val;
+        DOM.oddsInput.type = 'number';
+        DOM.oddsInput.step = '0.01';
+        DOM.oddsInput.min = '1.01';
+        if (isFinite(dec)) DOM.oddsInput.value = dec.toFixed(2);
+      }
+      updateOddsDerived();
+    });
+    updateOddsDerived();
+  }
 }
 
 // ===== Tipsters Management =====
@@ -290,6 +356,20 @@ function handleAddBet(e) {
     date: DOM.betDateInput.value || new Date().toISOString(),
     notes: DOM.notesInput.value.trim()
   };
+
+  // Duplicate protection: same tipster, team, date (day), stake, odds
+  const normalizedDate = new Date(bet.date).toISOString().slice(0,10);
+  const dup = APP_STATE.bets.find(b => 
+    b.tipster === bet.tipster &&
+    b.team.toLowerCase() === bet.team.toLowerCase() &&
+    new Date(b.date).toISOString().slice(0,10) === normalizedDate &&
+    Math.abs(b.betAmount - bet.betAmount) < 1e-9 &&
+    Math.abs(b.odds - bet.odds) < 1e-9
+  );
+  if (dup) {
+    showAlert('Duplikált fogadásnak tűnik (azonos tippadó/csapat/dátum/tét/szorzó).', 'warning');
+    return;
+  }
 
   APP_STATE.bets.push(bet);
   updateCapital(bet, 'place');
@@ -768,8 +848,23 @@ function updatePagination() {
   const filteredBets = getFilteredBets();
   const totalPages = Math.ceil(filteredBets.length / APP_STATE.itemsPerPage);
 
-  DOM.currentPage.textContent = `${APP_STATE.currentPage} / ${totalPages}`;
-  DOM.prevPageBtn.disabled = APP_STATE.currentPage === 1;
+  if (DOM.pageNumbers) {
+    DOM.pageNumbers.innerHTML = '';
+    const makeBtn = (page) => {
+      const b = document.createElement('button');
+      b.className = 'btn btn-sm ' + (page === APP_STATE.currentPage ? 'btn-primary' : 'btn-secondary');
+      b.textContent = page;
+      b.addEventListener('click', () => { APP_STATE.currentPage = page; refreshUI(); });
+      return b;
+    };
+    const maxButtons = 7;
+    let start = Math.max(1, APP_STATE.currentPage - 3);
+    let end = Math.min(totalPages, start + maxButtons - 1);
+    start = Math.max(1, end - maxButtons + 1);
+    for (let p = start; p <= end; p++) DOM.pageNumbers.appendChild(makeBtn(p));
+  }
+
+  DOM.prevPageBtn.disabled = APP_STATE.currentPage === 1 || totalPages === 0;
   DOM.nextPageBtn.disabled = APP_STATE.currentPage === totalPages || totalPages === 0;
 }
 
