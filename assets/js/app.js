@@ -55,6 +55,7 @@ function init() {
   cacheDOMElements();
   initTipstersData();
   loadFromStorage();
+  normalizeDefaultTipsterNames();
   setupEventListeners();
   populateSelects();
   applyTheme();
@@ -225,6 +226,7 @@ function addNewTipster() {
         current_capital: DEFAULT_INITIAL_CAPITAL,
         initial_set: true
       };
+      normalizeDefaultTipsterNames();
       saveToStorage();
       refreshUI(); // populateSelects újrarendez
       showNotification(`${name} sikeresen hozzáadva!`, 'success');
@@ -1284,12 +1286,36 @@ function populateSelects() {
 
 function getSortedTipsterNames() {
   const names = Object.keys(APP_STATE.tipstersData);
-  const isDefault = (n) => /^Tippadó\s+\d+$/.test(n);
-  const custom = names.filter(n => !isDefault(n)); // megtartjuk a meglévő sorrendet
+  const custom = names.filter(n => !isDefaultName(n)); // megtartjuk a meglévő sorrendet
   const defaults = names
-    .filter(isDefault)
+    .filter(isDefaultName)
     .sort((a, b) => parseInt(a.split(' ')[1], 10) - parseInt(b.split(' ')[1], 10));
   return [...custom, ...defaults];
+}
+
+function isDefaultName(name) {
+  return /^Tippadó\s+\d+$/.test(name);
+}
+
+// Rename default "Tippadó N" entries so numbering starts after custom names
+function normalizeDefaultTipsterNames() {
+  const names = Object.keys(APP_STATE.tipstersData);
+  const custom = names.filter(n => !isDefaultName(n));
+  const defaults = names
+    .filter(isDefaultName)
+    .sort((a, b) => parseInt(a.split(' ')[1], 10) - parseInt(b.split(' ')[1], 10));
+
+  if (defaults.length === 0) return;
+
+  const offset = custom.length + 1;
+  const newData = {};
+  // keep custom entries as-is, preserving insertion order
+  custom.forEach(n => { newData[n] = APP_STATE.tipstersData[n]; });
+  defaults.forEach((oldName, idx) => {
+    const newName = `Tippadó ${offset + idx}`;
+    newData[newName] = APP_STATE.tipstersData[oldName];
+  });
+  APP_STATE.tipstersData = newData;
 }
 
 // ===== Theme =====
