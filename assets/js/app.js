@@ -519,10 +519,10 @@ function renderTipstersTable() {
       <td>${stats.winRate.toFixed(1)}%</td>
       <td>
         <div class="btn-group">
-          <button type="button" class="btn btn-sm btn-secondary" onclick="setTipsterCapital('${name}')">
+          <button type="button" class="btn btn-sm btn-secondary" data-action="capital" data-name="${name}">
             Tőke
           </button>
-          <button type="button" class="btn btn-sm btn-primary" onclick="viewTipsterDetails('${name}')">
+          <button type="button" class="btn btn-sm btn-primary" data-action="details" data-name="${name}">
             Részletek
           </button>
         </div>
@@ -534,6 +534,24 @@ function renderTipstersTable() {
 
   DOM.totalCapital.textContent = totalCurrent.toFixed(2);
   DOM.totalInitialCapital.textContent = totalInitial.toFixed(2);
+
+  // Event delegation for dynamically rendered buttons
+  if (!DOM.tipstersTableBody._delegated) {
+    DOM.tipstersTableBody.addEventListener('click', (e) => {
+      const capBtn = e.target.closest('[data-action="capital"]');
+      if (capBtn) {
+        const name = capBtn.getAttribute('data-name');
+        if (name) setTipsterCapital(name);
+        return;
+      }
+      const detBtn = e.target.closest('[data-action="details"]');
+      if (detBtn) {
+        const name = detBtn.getAttribute('data-name');
+        if (name) viewTipsterDetails(name);
+      }
+    });
+    DOM.tipstersTableBody._delegated = true;
+  }
 }
 
 function refreshStatistics() {
