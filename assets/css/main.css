@@ -165,7 +165,8 @@ p:last-child { margin-bottom: 0; }
 .table tr.bet-row-win:hover { background-color: var(--success-bg-hover); }
 .table tr.bet-row-lose { background-color: var(--error-bg); border-left-color: var(--error); }
 .table tr.bet-row-lose:hover { background-color: var(--error-bg-hover); }
-.table tr.bet-row-pending { border-left-color: var(--pending-border); }
+/* Pending rows should look neutral/white */
+.table tr.bet-row-pending { background-color: var(--card); border-left-color: var(--pending-border); }
 .table tr:hover { background-color: var(--surface); }
 .table tr:last-child td { border-bottom: none; }
 .table-mobile-label { display: none; font-weight: 600; color: var(--text-secondary); margin-bottom: 0.25rem; }

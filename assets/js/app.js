@@ -1061,6 +1061,10 @@ function recalcAllCapitals() {
       d.current_capital += stake * odds;
     }
   });
+  // Clamp to 2 decimals for display consistency
+  Object.values(APP_STATE.tipstersData).forEach(d => {
+    d.current_capital = Math.max(0, Number(d.current_capital.toFixed(2)));
+  });
 }
 
 function calculateProfitOverTime() {
