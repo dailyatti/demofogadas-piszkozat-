@@ -181,7 +181,9 @@ function setupEventListeners() {
   DOM.resetAllBtn.addEventListener('click', resetAllData);
 
   // Tipsters
-  DOM.addTipsterBtn.addEventListener('click', addNewTipster);
+  if (DOM.addTipsterBtn) {
+    DOM.addTipsterBtn.addEventListener('click', addNewTipster);
+  }
 
   // Tabs
   DOM.tabs.forEach(tab => {
@@ -246,6 +248,10 @@ function setTipsterCapital(name) {
       saveToStorage();
       refreshUI();
       showNotification('Tőke sikeresen beállítva!', 'success');
+    }
+    // ha érvénytelen input, akkor is frissítünk hogy bezárás után friss UI legyen
+    else {
+      refreshUI();
     }
   });
 }
@@ -513,10 +519,10 @@ function renderTipstersTable() {
       <td>${stats.winRate.toFixed(1)}%</td>
       <td>
         <div class="btn-group">
-          <button class="btn btn-sm btn-secondary" onclick="setTipsterCapital('${name}')">
+          <button type="button" class="btn btn-sm btn-secondary" onclick="setTipsterCapital('${name}')">
             Tőke
           </button>
-          <button class="btn btn-sm btn-primary" onclick="viewTipsterDetails('${name}')">
+          <button type="button" class="btn btn-sm btn-primary" onclick="viewTipsterDetails('${name}')">
             Részletek
           </button>
         </div>
