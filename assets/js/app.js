@@ -373,8 +373,7 @@ function deleteBet(betId) {
     const betIndex = APP_STATE.bets.findIndex(b => b.id === betId);
     if (betIndex === -1) return;
 
-    const bet = APP_STATE.bets[betIndex];
-    updateCapital(bet, 'revert');
+    // Remove bet and recompute capitals
     APP_STATE.bets.splice(betIndex, 1);
 
     saveToStorage();
@@ -465,7 +464,7 @@ function renderBetsTable() {
       </td>
       <td>
         <span class="table-mobile-label">Eredmény:</span>
-        <select class="form-select" onchange="updateBetOutcome('${bet.id}', this.value)">
+        <select class="form-select" data-bet-id="${bet.id}">
           <option value="pending" ${bet.outcome === 'pending' ? 'selected' : ''}>⏳ Függőben</option>
           <option value="win" ${bet.outcome === 'win' ? 'selected' : ''}>✅ Nyert</option>
           <option value="lose" ${bet.outcome === 'lose' ? 'selected' : ''}>❌ Vesztett</option>
@@ -474,13 +473,13 @@ function renderBetsTable() {
       <td>
         <span class="table-mobile-label">Műveletek:</span>
         <div class="btn-group">
-          <button class="btn btn-sm btn-icon btn-secondary" onclick="editBet('${bet.id}')" title="Szerkesztés">
+          <button class="btn btn-sm btn-icon btn-secondary" data-action="edit-bet" data-id="${bet.id}" title="Szerkesztés">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
               <path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
             </svg>
           </button>
-          <button class="btn btn-sm btn-icon btn-danger" onclick="deleteBet('${bet.id}')" title="Törlés">
+          <button class="btn btn-sm btn-icon btn-danger" data-action="delete-bet" data-id="${bet.id}" title="Törlés">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="3 6 5 6 21 6"/>
               <path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/>
@@ -492,6 +491,29 @@ function renderBetsTable() {
 
     DOM.betsTableBody.appendChild(row);
   });
+
+  // Delegate events once for edit/delete and result change
+  if (!DOM.betsTableBody._delegated) {
+    DOM.betsTableBody.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-action]');
+      if (!btn) return;
+      const id = btn.getAttribute('data-id');
+      if (!id) return;
+      if (btn.dataset.action === 'edit-bet') {
+        editBet(id);
+      } else if (btn.dataset.action === 'delete-bet') {
+        deleteBet(id);
+      }
+    });
+    DOM.betsTableBody.addEventListener('change', (e) => {
+      const sel = e.target.closest('select.form-select[data-bet-id]');
+      if (sel) {
+        const id = sel.getAttribute('data-bet-id');
+        updateBetOutcome(id, sel.value);
+      }
+    });
+    DOM.betsTableBody._delegated = true;
+  }
 }
 
 function renderTipstersTable() {
