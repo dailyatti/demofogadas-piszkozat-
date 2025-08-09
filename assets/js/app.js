@@ -409,6 +409,8 @@ function updateCapital(bet, action) {
 
 // ===== UI Updates =====
 function refreshUI() {
+  // Ensure capitals are consistent with bets before rendering
+  recalcAllCapitals();
   renderBetsTable();
   renderTipstersTable();
   refreshStatistics();
@@ -1038,6 +1040,27 @@ function updateTrendsChart() {
   APP_STATE.charts.trends.data.datasets[0].data = trendsData.wins;
   APP_STATE.charts.trends.data.datasets[1].data = trendsData.losses;
   APP_STATE.charts.trends.update();
+}
+
+// Recalculate all tipster current_capital from initial_capital and bets
+function recalcAllCapitals() {
+  // Reset to initial
+  Object.entries(APP_STATE.tipstersData).forEach(([name, data]) => {
+    if (typeof data.initial_capital === 'number') {
+      data.current_capital = data.initial_capital;
+    }
+  });
+  // Apply each bet: stake deduction; win adds full payout
+  APP_STATE.bets.forEach(bet => {
+    const d = APP_STATE.tipstersData[bet.tipster];
+    if (!d) return;
+    const stake = Number(bet.betAmount) || 0;
+    const odds = Number(bet.odds) || 0;
+    d.current_capital -= stake;
+    if (bet.outcome === 'win') {
+      d.current_capital += stake * odds;
+    }
+  });
 }
 
 function calculateProfitOverTime() {
