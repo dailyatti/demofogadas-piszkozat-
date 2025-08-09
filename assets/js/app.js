@@ -18,7 +18,8 @@ const APP_STATE = {
   currentPage: 1,
   itemsPerPage: 10,
   theme: 'light',
-  charts: {}
+  charts: {},
+  oddsFormat: 'dec'
 };
 
 // ===== Constants =====
@@ -220,7 +221,7 @@ function setupEventListeners() {
   if (DOM.oddsInput && DOM.oddsFormatSelect && DOM.impliedProb) {
     const updateOddsDerived = () => {
       let val = DOM.oddsInput.value.trim();
-      const fmt = DOM.oddsFormatSelect.value;
+      const fmt = APP_STATE.oddsFormat = DOM.oddsFormatSelect.value;
       let dec = 0;
       if (!val) { DOM.impliedProb.textContent = '--%'; return; }
       if (fmt === 'dec') {
@@ -238,7 +239,7 @@ function setupEventListeners() {
     function getDecimalFrom(value, format) {
       if (format === 'dec') return parseFloat(value);
       const a = parseFloat(value);
-      if (!isFinite(a)) return NaN;
+      if (!isFinite(a) || a === 0) return NaN;
       return a > 0 ? (1 + a/100) : (1 + 100/Math.abs(a));
     }
     function getAmericanFromDecimal(dec) {
@@ -247,12 +248,12 @@ function setupEventListeners() {
     }
 
     window.getDecimalOddsFromInput = function getDecimalOddsFromInput() {
-      const fmt = DOM.oddsFormatSelect.value;
+      const fmt = APP_STATE.oddsFormat;
       return getDecimalFrom(DOM.oddsInput.value, fmt);
     };
     window.setOddsByDecimal = function setOddsByDecimal(dec) {
       if (!isFinite(dec)) return;
-      const fmt = DOM.oddsFormatSelect.value;
+      const fmt = APP_STATE.oddsFormat;
       if (fmt === 'dec') {
         DOM.oddsInput.type = 'number';
         DOM.oddsInput.step = '0.01';
@@ -276,18 +277,15 @@ function setupEventListeners() {
     };
     DOM.oddsInput.addEventListener('input', updateOddsDerived);
     // tárold az előző formátumot, hogy pontos konverzió legyen
-    DOM.oddsFormatSelect.addEventListener('focus', () => {
-      DOM.oddsFormatSelect.dataset.prev = DOM.oddsFormatSelect.value;
-    });
-    DOM.oddsFormatSelect.addEventListener('mousedown', () => {
-      DOM.oddsFormatSelect.dataset.prev = DOM.oddsFormatSelect.value;
-    });
+    DOM.oddsFormatSelect.addEventListener('focus', () => { DOM.oddsFormatSelect.dataset.prev = APP_STATE.oddsFormat; });
+    DOM.oddsFormatSelect.addEventListener('mousedown', () => { DOM.oddsFormatSelect.dataset.prev = APP_STATE.oddsFormat; });
     DOM.oddsFormatSelect.addEventListener('change', () => {
-      const prevFmt = DOM.oddsFormatSelect.dataset.prev || (DOM.oddsFormatSelect.value === 'dec' ? 'amer' : 'dec');
+      const prevFmt = DOM.oddsFormatSelect.dataset.prev || APP_STATE.oddsFormat;
       const currentValue = DOM.oddsInput.value;
       const dec = getDecimalFrom(currentValue, prevFmt);
+      APP_STATE.oddsFormat = DOM.oddsFormatSelect.value;
       setOddsByDecimal(dec);
-      DOM.oddsFormatSelect.dataset.prev = DOM.oddsFormatSelect.value;
+      DOM.oddsFormatSelect.dataset.prev = APP_STATE.oddsFormat;
       updateOddsDerived();
     });
     updateOddsDerived();
