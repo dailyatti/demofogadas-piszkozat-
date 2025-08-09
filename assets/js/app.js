@@ -1325,12 +1325,17 @@ function showModal(title, message, type = 'alert', callback = null) {
   }
 
   DOM.modalConfirmBtn.onclick = () => {
-    if (type === 'prompt' && callback) {
-      callback(DOM.modalInput.value);
-    } else if (callback) {
-      callback();
+    try {
+      if (type === 'prompt' && callback) {
+        callback(DOM.modalInput.value);
+      } else if (callback) {
+        callback();
+      }
+    } catch (err) {
+      console.error('Modal callback error:', err);
+    } finally {
+      closeModal();
     }
-    closeModal();
   };
 }
 
