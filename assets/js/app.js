@@ -1663,9 +1663,9 @@ function viewTipsterDetails(name) {
 
   detailsHTML += '</ul>';
 
+  // Használd a showModal-t, hogy az OK gomb működjön
+  showModal('Tippadó Részletek', '', 'alert', null);
   DOM.modalMessage.innerHTML = detailsHTML;
-  DOM.modalTitle.textContent = 'Tippadó Részletek';
-  DOM.modalOverlay.classList.add('show');
 }
 
 function handleKeyboardShortcuts(e) {
