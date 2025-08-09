@@ -328,7 +328,8 @@ function validateBetForm() {
 }
 
 function quickAddBet() {
-  DOM.tipsterSelect.value = TIPSTER_NAMES[0];
+  const sorted = getSortedTipsterNames();
+  DOM.tipsterSelect.value = sorted[0] || '';
   DOM.sportSelect.value = SPORTS[0];
   DOM.teamInput.value = 'Gyors Fogadás';
   DOM.betAmountInput.value = '10';
