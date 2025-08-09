@@ -226,7 +226,7 @@ function addNewTipster() {
         initial_set: true
       };
       saveToStorage();
-      refreshUI();
+      refreshUI(); // populateSelects újrarendez
       showNotification(`${name} sikeresen hozzáadva!`, 'success');
     }
   });
@@ -1267,7 +1267,7 @@ function populateSelects() {
   DOM.tipsterSelect.innerHTML = '<option value="">Válasszon tippadót...</option>';
   DOM.filterTipster.innerHTML = '<option value="">Mind</option>';
 
-  Object.keys(APP_STATE.tipstersData).forEach(name => {
+  getSortedTipsterNames().forEach(name => {
     DOM.tipsterSelect.innerHTML += `<option value="${name}">${name}</option>`;
     DOM.filterTipster.innerHTML += `<option value="${name}">${name}</option>`;
   });
@@ -1280,6 +1280,16 @@ function populateSelects() {
     DOM.sportSelect.innerHTML += `<option value="${sport}">${sport}</option>`;
     DOM.filterSport.innerHTML += `<option value="${sport}">${sport}</option>`;
   });
+}
+
+function getSortedTipsterNames() {
+  const names = Object.keys(APP_STATE.tipstersData);
+  const isDefault = (n) => /^Tippadó\s+\d+$/.test(n);
+  const custom = names.filter(n => !isDefault(n)); // megtartjuk a meglévő sorrendet
+  const defaults = names
+    .filter(isDefault)
+    .sort((a, b) => parseInt(a.split(' ')[1], 10) - parseInt(b.split(' ')[1], 10));
+  return [...custom, ...defaults];
 }
 
 // ===== Theme =====
