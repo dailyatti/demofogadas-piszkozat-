@@ -62,6 +62,7 @@ function init() {
   applyTheme();
   initCharts();
   refreshUI();
+  syncPublicStateFromServer();
   showNotification('Alkalmazás sikeresen betöltve!', 'success');
   window.MathPro = MathPro;
 }
@@ -1532,6 +1533,23 @@ function loadFromStorage() {
     } catch (err) {
       console.error('Error loading data:', err);
     }
+  }
+}
+
+async function syncPublicStateFromServer() {
+  try {
+    const res = await fetch('/api/state', { headers: { accept: 'application/json' } });
+    if (!res.ok) return;
+    const serverState = await res.json();
+    if (serverState && serverState.tipstersData && Array.isArray(serverState.bets)) {
+      APP_STATE.tipstersData = serverState.tipstersData;
+      APP_STATE.bets = serverState.bets.map(normalizeStoredBet);
+      saveToStorage();
+      populateSelects();
+      refreshUI();
+    }
+  } catch {
+    // The static file flow still works without the deployed API.
   }
 }
 
