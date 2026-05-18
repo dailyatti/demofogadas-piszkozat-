@@ -25,9 +25,12 @@ export function decimalToAmerican(decimalOdds) {
 }
 
 export function removeVigorishProportional(decimals) {
-  const impliedSum = decimals.reduce((sum, d) => sum + decimalToImpliedProbability(d), 0);
-  return decimals.map(d => {
-    const p = decimalToImpliedProbability(d) / impliedSum;
+  if (!Array.isArray(decimals) || decimals.length === 0) return [];
+  const probabilities = decimals.map(decimalToImpliedProbability);
+  const impliedSum = probabilities.reduce((sum, p) => sum + p, 0);
+  if (!(impliedSum > 0)) return decimals.map(() => Infinity);
+  return probabilities.map(probability => {
+    const p = probability / impliedSum;
     return impliedProbabilityToDecimal(p);
   });
 }

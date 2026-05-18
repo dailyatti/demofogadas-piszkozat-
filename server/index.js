@@ -9,7 +9,21 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 const app = express();
-app.use(cors());
+const PORT = process.env.PORT || 3333;
+const HOST = process.env.HOST || '127.0.0.1';
+const ADMIN_TOKEN = process.env.BTP_ADMIN_TOKEN || '';
+const BOOTSTRAP_API_KEY = process.env.BTP_API_KEY || '';
+const ALLOWED_ORIGINS = (process.env.BTP_ALLOWED_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173')
+  .split(',')
+  .map(origin => origin.trim())
+  .filter(Boolean);
+
+app.use(cors({
+  origin(origin, callback) {
+    if (!origin || ALLOWED_ORIGINS.includes(origin)) return callback(null, true);
+    return callback(new Error('CORS origin not allowed'));
+  }
+}));
 app.use(express.json({ limit: '2mb' }));
 
 // Simple JSON file storage
@@ -23,6 +37,13 @@ function ensureDataFiles() {
   if (!existsSync(DATA_DIR)) mkdirSync(DATA_DIR, { recursive: true });
   if (!existsSync(DB_FILE)) writeFileSync(DB_FILE, JSON.stringify({ tipstersData: {}, bets: [] }, null, 2));
   if (!existsSync(KEYS_FILE)) writeFileSync(KEYS_FILE, JSON.stringify({ keys: [] }, null, 2));
+  if (BOOTSTRAP_API_KEY) {
+    const data = readKeys();
+    if (!data.keys.includes(BOOTSTRAP_API_KEY)) {
+      data.keys.push(BOOTSTRAP_API_KEY);
+      writeKeys(data);
+    }
+  }
 }
 
 function readDB() {
@@ -43,7 +64,7 @@ function writeKeys(data) {
 
 // API-key middleware
 function requireApiKey(req, res, next) {
-  const header = req.get('x-api-key') || req.query.apiKey;
+  const header = req.get('x-api-key');
   if (!header) return res.status(401).json({ error: 'API key required' });
   const { keys } = readKeys();
   if (!keys.includes(header)) return res.status(403).json({ error: 'Invalid API key' });
@@ -55,6 +76,8 @@ app.get('/health', (req, res) => res.json({ ok: true }));
 
 // Generate API key
 app.post('/api/keys', (req, res) => {
+  if (!ADMIN_TOKEN) return res.status(404).json({ error: 'Not found' });
+  if (req.get('x-admin-token') !== ADMIN_TOKEN) return res.status(403).json({ error: 'Invalid admin token' });
   const { keys } = readKeys();
   const key = randomBytes(24).toString('hex');
   keys.push(key);
@@ -124,13 +147,37 @@ function normalizeBet(b) {
     odds: Number(b.odds),
     outcome: b.outcome === 'win' || b.outcome === 'lose' ? b.outcome : 'pending',
     date: b.date ? new Date(b.date).toISOString() : new Date().toISOString(),
-    notes: b.notes ? String(b.notes) : ''
+    notes: b.notes ? String(b.notes) : '',
+    estimatedProbability: normalizeProbability(b.estimatedProbability),
+    confidence: normalizePercent(b.confidence),
+    closingOdds: normalizePositiveNumber(b.closingOdds),
+    modelTag: b.modelTag ? String(b.modelTag) : '',
+    analysis: b.analysis ? String(b.analysis) : ''
   };
 }
 
-const PORT = process.env.PORT || 3333;
-app.listen(PORT, () => {
-  console.log(`API listening on http://localhost:${PORT}`);
+function normalizePositiveNumber(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+function normalizeProbability(value) {
+  const n = normalizePositiveNumber(value);
+  if (n === null) return null;
+  const p = n > 1 ? n / 100 : n;
+  return p > 0 && p < 1 ? p : null;
+}
+
+function normalizePercent(value) {
+  if (value === null || value === undefined || value === '') return null;
+  const n = Number(value);
+  if (!Number.isFinite(n)) return null;
+  return Math.min(100, Math.max(0, n));
+}
+
+app.listen(PORT, HOST, () => {
+  console.log(`API listening on http://${HOST}:${PORT}`);
 });
 
 

@@ -8,11 +8,13 @@ export function betaPosterior(alphaPrior, betaPrior, wins, losses) {
 
 export function betaMean(alpha, beta) {
   const a = Number(alpha), b = Number(beta);
+  if (!(a > 0 && b > 0)) return 0;
   return a / (a + b);
 }
 
 export function betaVariance(alpha, beta) {
   const a = Number(alpha), b = Number(beta);
+  if (!(a > 0 && b > 0)) return 0;
   const s = a + b;
   return (a * b) / (s * s * (s + 1));
 }

@@ -138,9 +138,9 @@
         
         <div class="grid grid-3 mb-3">
           <div class="form-group">
-            <label class="form-label" for="teamInput">Csapat/Játékos *</label>
-            <input type="text" id="teamInput" class="form-input" placeholder="pl. Real Madrid" required>
-            <span class="form-error hidden">Kérjük adja meg a csapat nevét</span>
+            <label class="form-label" for="teamInput">Mérkőzés / piac *</label>
+            <input type="text" id="teamInput" class="form-input" placeholder="pl. Real Madrid - Barcelona, Over 2.5" required>
+            <span class="form-error hidden">Kérjük adja meg a mérkőzést vagy piacot</span>
           </div>
           
           <div class="form-group">
@@ -163,7 +163,7 @@
             </div>
           </div>
         </div>
-        
+
         <div class="grid grid-2 mb-3">
           <div class="form-group">
             <label class="form-label" for="outcomeSelect">Eredmény</label>
@@ -203,6 +203,21 @@
           </button>
         </div>
       </form>
+    </section>
+
+    <section class="card" id="llmImportSection">
+      <div class="card-header">
+        <h2 class="card-title">JSON Import</h2>
+        <button class="btn btn-sm btn-secondary" id="fillSampleImportBtn">Minta</button>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="llmImportInput">Fogadások JSON formátumban</label>
+        <textarea id="llmImportInput" class="form-textarea" placeholder='[{"tipster":"Tippadó 1","sport":"⚽ Labdarúgás","team":"Real Madrid - Barcelona, Over 2.5","betAmount":10,"odds":1.85,"outcome":"pending","notes":"demo"}]'></textarea>
+      </div>
+      <div class="btn-group">
+        <button class="btn btn-primary" id="importTextJsonBtn">Importálás</button>
+        <button class="btn btn-secondary" id="clearImportTextBtn">Törlés</button>
+      </div>
     </section>
 
     <!-- Bets List Section -->
@@ -283,7 +298,7 @@
               <th>Dátum</th>
               <th>Tippadó</th>
               <th>Sportág</th>
-              <th>Csapat</th>
+              <th>Mérkőzés / piac</th>
               <th>Tét</th>
               <th>Szorzó</th>
               <th>Lehetséges Nyeremény</th>

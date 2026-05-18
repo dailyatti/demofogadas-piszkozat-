@@ -12,18 +12,16 @@ export function newtonRaphson({ f, fprime, x0, tol = 1e-8, maxIter = 100 }) {
 }
 
 export function optimizeKellyPortfolio({ probabilities, decimalOdds, maxIter = 500, step = 0.1 }) {
-  const p = probabilities.map(Number);
-  const b = decimalOdds.map(d => Number(d) - 1);
-  const n = p.length;
-  let f = Array(n).fill(0);
-  for (let iter = 0; iter < maxIter; iter++) {
-    const g = gradient(p, b, f);
-    for (let i = 0; i < n; i++) f[i] = Math.max(0, f[i] + step * g[i]);
-    const s = f.reduce((a, x) => a + x, 0);
-    if (s > 0.99) f = f.map(x => (x / s) * 0.99);
-    if (l2norm(g) < 1e-6) break;
-  }
-  return f;
+  const p = Array.isArray(probabilities) ? probabilities.map(x => clamp(Number(x), 0, 1)) : [];
+  const b = Array.isArray(decimalOdds) ? decimalOdds.map(d => Number(d) - 1) : [];
+  const n = Math.min(p.length, b.length);
+  const f = Array.from({ length: n }, (_, i) => {
+    if (!(b[i] > 0)) return 0;
+    const q = 1 - p[i];
+    return clamp((p[i] * b[i] - q) / b[i], 0, 1);
+  });
+  const s = f.reduce((a, x) => a + x, 0);
+  return s > 0.99 ? f.map(x => (x / s) * 0.99) : f;
 }
 
 function gradient(p, b, f) {
@@ -41,6 +39,10 @@ function gradient(p, b, f) {
 
 function l2norm(arr) {
   return Math.sqrt(arr.reduce((s, x) => s + x * x, 0));
+}
+
+function clamp(x, min, max) {
+  return Math.min(max, Math.max(min, Number.isFinite(x) ? x : min));
 }
 
 

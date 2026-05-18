@@ -3,13 +3,19 @@ export function simulateBankroll({
   bets,
   runs = 10000
 }) {
+  const runCount = Math.max(1, Math.floor(Number(runs) || 1));
+  const schedule = Array.isArray(bets) ? bets : [];
   const results = [];
-  for (let r = 0; r < runs; r++) {
-    let bank = initialBankroll;
-    for (const b of bets) {
-      const stake = typeof b.stake === 'function' ? b.stake(bank) : Number(b.stake);
-      const win = Math.random() < b.trueProb;
-      bank += win ? stake * (b.decimalOdds - 1) : -stake;
+  for (let r = 0; r < runCount; r++) {
+    let bank = Math.max(0, Number(initialBankroll) || 0);
+    for (const b of schedule) {
+      const rawStake = typeof b.stake === 'function' ? b.stake(bank) : Number(b.stake);
+      const stake = Math.min(bank, Math.max(0, Number(rawStake) || 0));
+      const probability = Math.min(1, Math.max(0, Number(b.trueProb) || 0));
+      const decimalOdds = Number(b.decimalOdds);
+      if (!(decimalOdds > 1) || stake === 0) continue;
+      const win = Math.random() < probability;
+      bank += win ? stake * (decimalOdds - 1) : -stake;
       if (bank <= 0) { bank = 0; break; }
     }
     results.push(bank);

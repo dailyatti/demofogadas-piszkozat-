@@ -24,7 +24,6 @@ const APP_STATE = {
 
 // ===== Constants =====
 const STORAGE_KEY = 'BetTrackerPro_v1.0';
-const CONFIG_KEY = 'BTP_CONFIG';
 const DEFAULT_INITIAL_CAPITAL = 100;
 const TIPSTER_NAMES = Array.from({ length: 12 }, (_, i) => `Tippadó ${i + 1}`);
 const SPORTS = [
@@ -59,11 +58,10 @@ function init() {
   normalizeDefaultTipsterNames();
   setupEventListeners();
   populateSelects();
+  clearForm();
   applyTheme();
-  refreshUI();
   initCharts();
-  // Optional: sync from server if configured
-  syncFromServerIfConfigured();
+  refreshUI();
   showNotification('Alkalmazás sikeresen betöltve!', 'success');
   window.MathPro = MathPro;
 }
@@ -85,6 +83,10 @@ function cacheDOMElements() {
   DOM.outcomeSelect = document.getElementById('outcomeSelect');
   DOM.betDateInput = document.getElementById('betDateInput');
   DOM.notesInput = document.getElementById('notesInput');
+  DOM.llmImportInput = document.getElementById('llmImportInput');
+  DOM.importTextJsonBtn = document.getElementById('importTextJsonBtn');
+  DOM.clearImportTextBtn = document.getElementById('clearImportTextBtn');
+  DOM.fillSampleImportBtn = document.getElementById('fillSampleImportBtn');
   // Odds helpers
   DOM.oddsFormatSelect = document.getElementById('oddsFormatSelect');
   DOM.impliedProb = document.getElementById('impliedProb');
@@ -162,7 +164,7 @@ function setupEventListeners() {
 
   // Form
   DOM.betForm.addEventListener('submit', handleAddBet);
-  DOM.betForm.addEventListener('reset', clearForm);
+  DOM.betForm.addEventListener('reset', () => setTimeout(clearFormState, 0));
   DOM.quickAddBtn.addEventListener('click', quickAddBet);
 
   // Filters
@@ -193,6 +195,9 @@ function setupEventListeners() {
   DOM.importJsonBtn.addEventListener('click', () => DOM.jsonFileInput.click());
   DOM.jsonFileInput.addEventListener('change', importJSON);
   DOM.resetAllBtn.addEventListener('click', resetAllData);
+  if (DOM.importTextJsonBtn) DOM.importTextJsonBtn.addEventListener('click', importTextJSON);
+  if (DOM.clearImportTextBtn) DOM.clearImportTextBtn.addEventListener('click', () => { DOM.llmImportInput.value = ''; });
+  if (DOM.fillSampleImportBtn) DOM.fillSampleImportBtn.addEventListener('click', fillSampleImport);
 
   // Tipsters
   if (DOM.addTipsterBtn) {
@@ -284,7 +289,7 @@ function setupEventListeners() {
       const currentValue = DOM.oddsInput.value;
       const dec = getDecimalFrom(currentValue, prevFmt);
       APP_STATE.oddsFormat = DOM.oddsFormatSelect.value;
-      setOddsByDecimal(dec);
+      window.setOddsByDecimal(dec);
       DOM.oddsFormatSelect.dataset.prev = APP_STATE.oddsFormat;
       updateOddsDerived();
     });
@@ -366,7 +371,7 @@ function handleAddBet(e) {
     return;
   }
 
-  const decOddsForSave = getDecimalOddsFromInput();
+  const decOddsForSave = window.getDecimalOddsFromInput();
   const bet = {
     id: generateId(),
     tipster: tipster,
@@ -406,7 +411,7 @@ function validateBetForm() {
   const fields = [
     { element: DOM.tipsterSelect, error: 'Kérjük válasszon tippadót' },
     { element: DOM.sportSelect, error: 'Kérjük válasszon sportágat' },
-    { element: DOM.teamInput, error: 'Kérjük adja meg a csapat nevét' },
+    { element: DOM.teamInput, error: 'Kérjük adja meg a mérkőzést vagy piacot' },
     { element: DOM.betAmountInput, error: 'Érvénytelen tét összeg', validator: (v) => parseFloat(v) > 0 }
   ];
 
@@ -427,7 +432,7 @@ function validateBetForm() {
 
   // Odds validáció formátum szerint
   const oddsErrorEl = DOM.oddsInput.parentElement.querySelector('.form-error');
-  const decOdds = getDecimalOddsFromInput();
+  const decOdds = window.getDecimalOddsFromInput();
   if (!(isFinite(decOdds) && decOdds >= 1.01)) {
     oddsErrorEl.classList.remove('hidden');
     oddsErrorEl.textContent = 'Érvénytelen szorzó';
@@ -447,13 +452,18 @@ function quickAddBet() {
   DOM.sportSelect.value = SPORTS[0];
   DOM.teamInput.value = 'Gyors Fogadás';
   DOM.betAmountInput.value = '10';
-  setOddsByDecimal(1.85);
+  window.setOddsByDecimal(1.85);
   DOM.outcomeSelect.value = 'pending';
   DOM.teamInput.focus();
 }
 
 function clearForm() {
+  if (!DOM.betForm) return;
   DOM.betForm.reset();
+  clearFormState();
+}
+
+function clearFormState() {
   document.querySelectorAll('.form-error').forEach(el => el.classList.add('hidden'));
   document.querySelectorAll('.error').forEach(el => el.classList.remove('error'));
   const now = new Date();
@@ -530,6 +540,15 @@ function refreshUI() {
   updatePagination();
 }
 
+function escapeHTML(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 function renderBetsTable() {
   const filteredBets = getFilteredBets();
   const sortedBets = sortBets(filteredBets);
@@ -553,16 +572,16 @@ function renderBetsTable() {
       </td>
       <td>
         <span class="table-mobile-label">Tippadó:</span>
-        ${bet.tipster}
+        ${escapeHTML(bet.tipster)}
       </td>
       <td>
         <span class="table-mobile-label">Sportág:</span>
-        ${bet.sport}
+        ${escapeHTML(bet.sport)}
       </td>
       <td>
-        <span class="table-mobile-label">Csapat:</span>
-        <strong>${bet.team}</strong>
-        ${bet.notes ? `<br><small class="text-muted">${bet.notes}</small>` : ''}
+        <span class="table-mobile-label">Mérkőzés / piac:</span>
+        <strong>${escapeHTML(bet.team)}</strong>
+        ${bet.notes ? `<br><small class="text-muted">${escapeHTML(bet.notes)}</small>` : ''}
       </td>
       <td>
         <span class="table-mobile-label">Tét:</span>
@@ -720,14 +739,15 @@ function refreshStatistics() {
 }
 
 function updateChangeIndicator(element, value, threshold) {
-  const isPositive = value > threshold;
+  const numericValue = Number(value) || 0;
+  const isPositive = numericValue > threshold;
   element.innerHTML = `
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       ${isPositive ? 
         '<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline>' : 
         '<polyline points="23 18 13.5 8.5 8.5 13.5 1 6"></polyline><polyline points="17 18 23 18 23 12"></polyline>'}
     </svg>
-    <span>${isPositive ? '+' : ''}${value > 0 ? value.toFixed(1) : value.toFixed(1)}%</span>
+    <span>${isPositive ? '+' : ''}${numericValue.toFixed(1)}%</span>
   `;
   element.className = `stat-change ${isPositive ? 'positive' : 'negative'}`;
 }
@@ -810,7 +830,7 @@ function getFilteredBets() {
 
     if (APP_STATE.filters.search) {
       const searchTerm = APP_STATE.filters.search;
-      const searchableText = `${bet.tipster} ${bet.team} ${bet.sport} ${bet.notes}`.toLowerCase();
+      const searchableText = `${bet.tipster} ${bet.team} ${bet.sport} ${bet.notes || ''}`.toLowerCase();
       if (!searchableText.includes(searchTerm)) return false;
     }
 
@@ -909,6 +929,7 @@ function calculateOverallStats() {
   let losses = 0;
   let pending = 0;
   let totalStaked = 0;
+  let openStake = 0;
   let totalReturns = 0;
 
   APP_STATE.bets.forEach(bet => {
@@ -921,6 +942,7 @@ function calculateOverallStats() {
       totalStaked += bet.betAmount;
     } else {
       pending++;
+      openStake += bet.betAmount;
     }
   });
 
@@ -938,6 +960,7 @@ function calculateOverallStats() {
     netProfit,
     roi: roi.toFixed(1),
     totalStaked,
+    openStake,
     totalReturns
   };
 }
@@ -1020,6 +1043,10 @@ function generateOverviewHTML() {
         <div class="stat-value">${stats.totalStaked.toFixed(2)}</div>
       </div>
       <div class="stat-card">
+        <div class="stat-label">Nyitott Tét</div>
+        <div class="stat-value">${stats.openStake.toFixed(2)}</div>
+      </div>
+      <div class="stat-card">
         <div class="stat-label">Összes Visszatérítés</div>
         <div class="stat-value">${stats.totalReturns.toFixed(2)}</div>
       </div>
@@ -1097,68 +1124,79 @@ function calculateAverageOdds() {
 
 // ===== Charts =====
 function initCharts() {
+  if (typeof Chart === 'undefined') return;
+
   // Profit Chart
-  const profitCtx = document.getElementById('profitChart').getContext('2d');
-  APP_STATE.charts.profit = new Chart(profitCtx, {
-    type: 'line',
-    data: {
-      labels: [],
-      datasets: [{
-        label: 'Profit',
-        data: [],
-        borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary'),
-        backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--primary') + '20',
-        tension: 0.4
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: false } }
-    }
-  });
+  const profitCanvas = document.getElementById('profitChart');
+  if (profitCanvas) {
+    const profitCtx = profitCanvas.getContext('2d');
+    APP_STATE.charts.profit = new Chart(profitCtx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Profit',
+          data: [],
+          borderColor: getComputedStyle(document.documentElement).getPropertyValue('--primary'),
+          backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--primary') + '20',
+          tension: 0.4
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false } }
+      }
+    });
+  }
 
   // Sport Distribution Chart
-  const sportCtx = document.getElementById('sportChart').getContext('2d');
-  APP_STATE.charts.sport = new Chart(sportCtx, {
-    type: 'doughnut',
-    data: {
-      labels: [],
-      datasets: [{
-        data: [],
-        backgroundColor: [
-          '#6366f1', '#10b981', '#f59e0b', '#ef4444',
-          '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'
-        ]
-      }]
-    },
-    options: { responsive: true, maintainAspectRatio: false }
-  });
+  const sportCanvas = document.getElementById('sportChart');
+  if (sportCanvas) {
+    const sportCtx = sportCanvas.getContext('2d');
+    APP_STATE.charts.sport = new Chart(sportCtx, {
+      type: 'doughnut',
+      data: {
+        labels: [],
+        datasets: [{
+          data: [],
+          backgroundColor: [
+            '#6366f1', '#10b981', '#f59e0b', '#ef4444',
+            '#3b82f6', '#8b5cf6', '#ec4899', '#14b8a6'
+          ]
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false }
+    });
+  }
 
   // Trends Chart
-  const trendsCtx = document.getElementById('trendsChart').getContext('2d');
-  APP_STATE.charts.trends = new Chart(trendsCtx, {
-    type: 'bar',
-    data: {
-      labels: [],
-      datasets: [{
-        label: 'Nyert',
-        data: [],
-        backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--success')
-      }, {
-        label: 'Vesztett',
-        data: [],
-        backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--error')
-      }]
-    },
-    options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
-  });
+  const trendsCanvas = document.getElementById('trendsChart');
+  if (trendsCanvas) {
+    const trendsCtx = trendsCanvas.getContext('2d');
+    APP_STATE.charts.trends = new Chart(trendsCtx, {
+      type: 'bar',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Nyert',
+          data: [],
+          backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--success')
+        }, {
+          label: 'Vesztett',
+          data: [],
+          backgroundColor: getComputedStyle(document.documentElement).getPropertyValue('--error')
+        }]
+      },
+      options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
+    });
+  }
 }
 
 function updateCharts() {
-  updateProfitChart();
-  updateSportChart();
-  updateTrendsChart();
+  if (APP_STATE.charts.profit) updateProfitChart();
+  if (APP_STATE.charts.sport) updateSportChart();
+  if (APP_STATE.charts.trends) updateTrendsChart();
 }
 
 function updateProfitChart() {
@@ -1304,20 +1342,26 @@ function exportTXT() {
 }
 
 function exportCSV() {
-  let csv = 'Dátum,Tippadó,Sportág,Csapat,Tét,Szorzó,Eredmény,Megjegyzések\n';
+  let csv = 'Dátum,Tippadó,Sportág,Mérkőzés/Piac,Tét,Szorzó,Eredmény,Megjegyzések\n';
 
   APP_STATE.bets.forEach(bet => {
-    csv += `"${new Date(bet.date).toLocaleDateString('hu-HU')}",`;
-    csv += `"${bet.tipster}",`;
-    csv += `"${bet.sport}",`;
-    csv += `"${bet.team}",`;
-    csv += `${bet.betAmount.toFixed(2)},`;
-    csv += `${bet.odds.toFixed(2)},`;
-    csv += `"${bet.outcome}",`;
-    csv += `"${bet.notes || ''}"\n`;
+    csv += [
+      csvCell(new Date(bet.date).toLocaleDateString('hu-HU')),
+      csvCell(bet.tipster),
+      csvCell(bet.sport),
+      csvCell(bet.team),
+      bet.betAmount.toFixed(2),
+      bet.odds.toFixed(2),
+      csvCell(bet.outcome),
+      csvCell(bet.notes || '')
+    ].join(',') + '\n';
   });
 
   downloadFile(csv, `bettracker_export_${getDateString()}.csv`, 'text/csv');
+}
+
+function csvCell(value) {
+  return `"${String(value ?? '').replace(/"/g, '""')}"`;
 }
 
 function exportJSON() {
@@ -1344,14 +1388,14 @@ function importJSON(event) {
       showConfirm('Importálás módja?', () => {
         // Merge
         Object.assign(APP_STATE.tipstersData, data.tipstersData);
-        APP_STATE.bets.push(...data.bets);
+        APP_STATE.bets.push(...(data.bets || []).map(normalizeStoredBet));
         saveToStorage();
         refreshUI();
         showNotification('Adatok egyesítve!', 'success');
       }, () => {
         // Replace
         APP_STATE.tipstersData = data.tipstersData;
-        APP_STATE.bets = data.bets;
+        APP_STATE.bets = (data.bets || []).map(normalizeStoredBet);
         saveToStorage();
         refreshUI();
         showNotification('Adatok lecserélve!', 'success');
@@ -1361,6 +1405,86 @@ function importJSON(event) {
     }
   };
   reader.readAsText(file);
+}
+
+function importTextJSON() {
+  const raw = DOM.llmImportInput?.value.trim();
+  if (!raw) {
+    showAlert('Nincs importálható JSON adat.', 'warning');
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(raw);
+    const rows = Array.isArray(parsed) ? parsed : [parsed];
+    const imported = [];
+
+    rows.forEach(item => {
+      const bet = normalizeImportedBet(item);
+      if (!bet) return;
+      if (!APP_STATE.tipstersData[bet.tipster]) {
+        APP_STATE.tipstersData[bet.tipster] = {
+          initial_capital: DEFAULT_INITIAL_CAPITAL,
+          current_capital: DEFAULT_INITIAL_CAPITAL,
+          initial_set: true
+        };
+      }
+      imported.push(bet);
+    });
+
+    if (imported.length === 0) {
+      showAlert('Nem találtam érvényes fogadást a JSON-ban.', 'warning');
+      return;
+    }
+
+    APP_STATE.bets.push(...imported);
+    normalizeDefaultTipsterNames();
+    saveToStorage();
+    populateSelects();
+    refreshUI();
+    showNotification(`${imported.length} fogadás importálva.`, 'success');
+  } catch (err) {
+    showAlert('Érvénytelen JSON formátum.', 'error');
+  }
+}
+
+function normalizeImportedBet(item) {
+  if (!item || typeof item !== 'object') return null;
+  const betAmount = Number(item.betAmount ?? item.amount ?? item.stake);
+  const odds = Number(item.odds ?? item.decimalOdds);
+  const tipster = String(item.tipster || 'Tippadó 1').trim();
+  const sport = String(item.sport || '').trim();
+  const team = String(item.team || item.match || item.market || '').trim();
+  if (!tipster || !sport || !team || !(betAmount > 0) || !(odds > 1)) return null;
+
+  const outcome = ['win', 'lose', 'pending'].includes(item.outcome) ? item.outcome : 'pending';
+  const date = item.date ? new Date(item.date) : new Date();
+  return normalizeStoredBet({
+    id: item.id || generateId(),
+    tipster,
+    sport,
+    team,
+    betAmount,
+    odds,
+    outcome,
+    date: Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString(),
+    notes: item.notes || item.note || ''
+  });
+}
+
+function fillSampleImport() {
+  if (!DOM.llmImportInput) return;
+  DOM.llmImportInput.value = JSON.stringify([
+    {
+      tipster: 'Tippadó 1',
+      sport: 'Labdarúgás',
+      team: 'Real Madrid - Barcelona, Over 2.5',
+      betAmount: 10,
+      odds: 1.85,
+      outcome: 'pending',
+      notes: 'demo'
+    }
+  ], null, 2);
 }
 
 function downloadFile(content, filename, mimeType) {
@@ -1379,6 +1503,14 @@ function getDateString() {
   return new Date().toISOString().slice(0, 10);
 }
 
+function normalizeStoredBet(bet) {
+  const normalized = { ...bet };
+  normalized.betAmount = Number(normalized.betAmount) || 0;
+  normalized.odds = Number(normalized.odds) || 0;
+  normalized.notes = normalized.notes ? String(normalized.notes) : '';
+  return normalized;
+}
+
 // ===== Storage =====
 function saveToStorage() {
   const data = {
@@ -1395,41 +1527,11 @@ function loadFromStorage() {
     try {
       const data = JSON.parse(stored);
       APP_STATE.tipstersData = data.tipstersData || {};
-      APP_STATE.bets = data.bets || [];
+      APP_STATE.bets = (data.bets || []).map(normalizeStoredBet);
       APP_STATE.theme = data.theme || 'light';
     } catch (err) {
       console.error('Error loading data:', err);
     }
-  }
-}
-
-function loadConfig() {
-  try {
-    const raw = localStorage.getItem(CONFIG_KEY);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-async function syncFromServerIfConfigured() {
-  const cfg = loadConfig();
-  if (!cfg || !cfg.API_BASE || !cfg.API_KEY) return;
-  try {
-    const res = await fetch(`${cfg.API_BASE.replace(/\/$/, '')}/api/state`, {
-      headers: { 'x-api-key': cfg.API_KEY }
-    });
-    if (!res.ok) throw new Error('HTTP ' + res.status);
-    const serverState = await res.json();
-    if (serverState && serverState.tipstersData && Array.isArray(serverState.bets)) {
-      APP_STATE.tipstersData = serverState.tipstersData;
-      APP_STATE.bets = serverState.bets;
-      saveToStorage();
-      refreshUI();
-      updateCharts();
-    }
-  } catch (e) {
-    console.warn('Szerver szinkron sikertelen:', e.message);
   }
 }
 
@@ -1700,9 +1802,6 @@ function handleKeyboardShortcuts(e) {
     closeModal();
   }
 }
-
-// Initialize default date
-clearForm();
 
 // Expose functions for inline handlers
 window.updateBetOutcome = updateBetOutcome;
