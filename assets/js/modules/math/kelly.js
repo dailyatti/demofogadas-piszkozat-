@@ -16,9 +16,9 @@ export function kellyStake(currentBankroll, trueWinProbability, decimalOdds, fra
 
 export function edge(trueWinProbability, decimalOdds) {
   const p = clamp(trueWinProbability, 0, 1);
-  const b = Number(decimalOdds) - 1;
-  if (b <= 0) return 0;
-  return p * (b + 1) - 1;
+  const d = Number(decimalOdds);
+  if (d <= 1) return 0;
+  return p - (1 / d);
 }
 
 export function fractionalKelly(k, fraction) {

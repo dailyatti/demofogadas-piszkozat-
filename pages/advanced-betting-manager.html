@@ -36,6 +36,7 @@
         <a href="#bets" class="nav-link">Fogadások</a>
         <a href="#statistics" class="nav-link">Statisztika</a>
         <a href="#tipsters" class="nav-link">Tippadók</a>
+        <a href="#admin" class="nav-link">Admin</a>
       </div>
       
       <div class="nav-actions">
@@ -56,6 +57,31 @@
 
   <!-- Main Content -->
   <main class="container">
+    <section class="card" id="adminSection">
+      <div class="card-header">
+        <h2 class="card-title">Admin</h2>
+        <span id="adminStatus" class="badge badge-warning">Admin kívül</span>
+      </div>
+      <div class="grid grid-3">
+        <div class="form-group">
+          <label class="form-label" for="adminEmailInput">Admin azonosító</label>
+          <input id="adminEmailInput" class="form-input" type="email" autocomplete="username" placeholder="Admin email">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="adminPasswordInput">Jelszó</label>
+          <input id="adminPasswordInput" class="form-input" type="password" autocomplete="current-password" placeholder="Admin jelszó">
+        </div>
+        <div class="form-group admin-actions">
+          <label class="form-label">Művelet</label>
+          <div class="btn-group">
+            <button id="adminLoginBtn" class="btn btn-primary">Belépés</button>
+            <button id="adminLogoutBtn" class="btn btn-secondary">Kilépés</button>
+          </div>
+        </div>
+      </div>
+      <p class="text-muted">Admin módban a hozzáadás, törlés és eredményfrissítés a Netlify szerveren történik, ezért mindenkinél ugyanaz az adat látszik.</p>
+    </section>
+
     <!-- Dashboard Section -->
     <section id="dashboard" class="mb-4">
       <div class="text-center mb-4">
@@ -214,10 +240,17 @@
         <label class="form-label" for="llmImportInput">Fogadások JSON formátumban</label>
         <textarea id="llmImportInput" class="form-textarea" placeholder='[{"tipster":"Tippadó 1","sport":"⚽ Labdarúgás","team":"Real Madrid - Barcelona, Over 2.5","betAmount":10,"odds":1.85,"outcome":"pending","notes":"demo"}]'></textarea>
       </div>
+      <div class="form-group">
+        <label class="form-label" for="llmApiKeyInput">API kulcs Netlify feltöltéshez</label>
+        <input id="llmApiKeyInput" class="form-input" type="password" autocomplete="off" placeholder="A kulcs nincs az oldalba égetve, csak ehhez a feltöltéshez használja">
+      </div>
       <div class="btn-group">
         <button class="btn btn-primary" id="importTextJsonBtn">Importálás</button>
+        <button class="btn btn-primary" id="uploadLlmApiBtn">API feltöltés</button>
+        <button class="btn btn-secondary" id="analyzeLlmApiBtn">API elemzés mentés nélkül</button>
         <button class="btn btn-secondary" id="clearImportTextBtn">Törlés</button>
       </div>
+      <div id="llmApiResult" class="text-muted mt-2"></div>
     </section>
 
     <!-- Bets List Section -->
@@ -506,8 +539,6 @@
   </button>
 
   <!-- App entry -->
-  <script type="module" src="../assets/js/app.js"></script>
+  <script type="module" src="../assets/js/app.js" charset="UTF-8"></script>
 </body>
 </html>
-
-

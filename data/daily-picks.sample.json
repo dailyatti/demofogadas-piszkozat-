@@ -1,0 +1,22 @@
+{
+  "date": "2026-05-27T12:00:00+02:00",
+  "options": {
+    "defaultTipster": "ChatGPT",
+    "bankrollUnits": 100,
+    "fractionalKelly": 0.25,
+    "maxStake": 3,
+    "minStake": 0.25
+  },
+  "picks": [
+    {
+      "tipster": "ChatGPT",
+      "sport": "Baseball - MLB",
+      "team": "Example Team ML",
+      "odds": 2.1,
+      "modelProbability": 0.52,
+      "minimumOdds": 1.96,
+      "sourceSummary": "AI pick + market odds + manual validation",
+      "rationale": "Positive EV after break-even check."
+    }
+  ]
+}

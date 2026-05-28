@@ -23,8 +23,7 @@ export default async (req: Request, _context: Context) => {
   }
 
   if (req.method === "DELETE") {
-    await writeState({ tipstersData: {}, bets: [] });
-    return json({ ok: true });
+    return json({ error: "Full state deletion is disabled. Use /api/admin/tips or /api/llm/tips to delete specific tips." }, 405);
   }
 
   return json({ error: "Method not allowed" }, 405);
