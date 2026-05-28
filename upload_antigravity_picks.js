@@ -552,6 +552,50 @@ async function main() {
         "date": "2026-05-28T15:00:00+02:00",
         "sourceSummary": "Gemini DeepResearch: piaci odds 1.80, modell odds 1.65, EV +9.1%",
         "rationale": "Gemini DeepResearch value pick. Modell odds alapjan becsult valoszinuseg 60.61%, piaci breakeven 55.56%."
+      },
+      {
+        "tipster": "Gemini DeepResearch",
+        "sport": "Amerikai Foci - UFL",
+        "team": "Dallas Renegades at St. Louis Battlehawks - St. Louis Battlehawks -6.5",
+        "odds": 1.85,
+        "modelProbability": 0.58,
+        "minimumOdds": 1.72,
+        "date": "2026-05-30T02:00:00+02:00",
+        "sourceSummary": "UFL Week 10 regular season matchup at The Dome at America's Center, St. Louis.",
+        "rationale": "Battlehawks are strong at home, expected ELO p=58.0%, breakeven=54.05%, EV=+7.3%. Recommended Kelly 8.5% stake."
+      },
+      {
+        "tipster": "Gemini DeepResearch",
+        "sport": "Amerikai Foci - UFL",
+        "team": "Houston Gamblers at Birmingham Stallions - Birmingham Stallions -9.5",
+        "odds": 1.95,
+        "modelProbability": 0.54,
+        "minimumOdds": 1.85,
+        "date": "2026-05-30T21:00:00+02:00",
+        "sourceSummary": "UFL Week 10 regular season matchup at Protective Stadium, Birmingham.",
+        "rationale": "Stallions are league powerhouse, model projects cover ELO p=54.0%, breakeven=51.28%, EV=+5.3%. Recommended Kelly 5.5% stake."
+      },
+      {
+        "tipster": "Gemini DeepResearch",
+        "sport": "Amerikai Foci - UFL",
+        "team": "Orlando Storm at DC Defenders - Over 44.5 Points",
+        "odds": 1.90,
+        "modelProbability": 0.55,
+        "minimumOdds": 1.82,
+        "date": "2026-05-31T18:00:00+02:00",
+        "sourceSummary": "UFL Week 10 regular season matchup at Audi Field, Washington D.C.",
+        "rationale": "Both defenses show fatigue, points projection 47.5, model p=55.0%, breakeven=52.63%, EV=+4.5%. Recommended Kelly 5.0% stake."
+      },
+      {
+        "tipster": "Gemini DeepResearch",
+        "sport": "Amerikai Foci - UFL",
+        "team": "Louisville Kings at Columbus Aviators - Columbus Aviators Moneyline",
+        "odds": 2.10,
+        "modelProbability": 0.51,
+        "minimumOdds": 1.96,
+        "date": "2026-06-01T00:00:00+02:00",
+        "sourceSummary": "UFL Week 10 regular season matchup at Historic Crew Stadium, Columbus.",
+        "rationale": "Columbus has home turf advantage and value pricing, model p=51.0%, breakeven=47.62%, EV=+7.1%. Recommended Kelly 6.5% stake."
       }
     ]
   };

@@ -52,22 +52,22 @@ const SPORTS = [
 ];
 
 const SPORT_GROUPS = [
-  { key: 'football', label: 'Labdar\u00fag\u00e1s' },
-  { key: 'basketball', label: 'Kos\u00e1rlabda' },
-  { key: 'tennis', label: 'Tenisz' },
-  { key: 'baseball', label: 'Baseball' },
-  { key: 'hockey', label: 'J\u00e9gkorong' },
-  { key: 'american-football', label: 'Amerikai foci' },
-  { key: 'australian-football', label: 'Ausztr\u00e1l futball' },
-  { key: 'cricket', label: 'Krikett' },
-  { key: 'volleyball', label: 'R\u00f6plabda' },
-  { key: 'combat', label: 'K\u00fczd\u0151sportok' },
-  { key: 'darts', label: 'Darts' },
-  { key: 'snooker', label: 'Snooker' },
-  { key: 'motorsport', label: 'Aut\u00f3sport' },
-  { key: 'horse-racing', label: 'L\u00f3verseny' },
-  { key: 'esport', label: 'eSport' },
-  { key: 'other', label: 'Egy\u00e9b' }
+  { key: 'football', label: '\u26bd Labdar\u00fag\u00e1s' },
+  { key: 'basketball', label: '\ud83c\udfc0 Kos\u00e1rlabda' },
+  { key: 'tennis', label: '\ud83c\udfbe Tenisz' },
+  { key: 'baseball', label: '\u26be Baseball' },
+  { key: 'hockey', label: '\ud83c\udfd2 J\u00e9gkorong' },
+  { key: 'american-football', label: '\ud83c\udfc8 Amerikai foci' },
+  { key: 'australian-football', label: '\ud83c\udfc9 Ausztr\u00e1l futball' },
+  { key: 'cricket', label: '\ud83c\udfcf Krikett' },
+  { key: 'volleyball', label: '\ud83c\udfd0 R\u00f6plabda' },
+  { key: 'combat', label: '\ud83e\udd4a K\u00fczd\u0151sportok' },
+  { key: 'darts', label: '\ud83c\udfaf Darts' },
+  { key: 'snooker', label: '\ud83c\udfb1 Snooker' },
+  { key: 'motorsport', label: '\ud83c\udfce\ufe0f Aut\u00f3sport' },
+  { key: 'horse-racing', label: '\ud83d\udc0e L\u00f3verseny' },
+  { key: 'esport', label: '\ud83d\udd79\ufe0f eSport' },
+  { key: 'other', label: '\u2753 Egy\u00e9b' }
 ];
 
 const SPORT_GROUP_ORDER = new Map(SPORT_GROUPS.map((sport, index) => [sport.key, index]));
@@ -2091,6 +2091,11 @@ function populateSelects() {
 
 function getSportFilterOptions() {
   const counts = new Map();
+  // Pre-populate with all known sport groups set to 0
+  SPORT_GROUPS.forEach(sport => {
+    counts.set(sport.key, 0);
+  });
+
   APP_STATE.bets.forEach(bet => {
     const key = getSportGroupKey(bet.sport);
     counts.set(key, (counts.get(key) || 0) + 1);
@@ -2100,10 +2105,10 @@ function getSportFilterOptions() {
     .map(([key, count]) => ({
       key,
       count,
-      label: SPORT_GROUP_LABELS.get(key) || 'Egy\u00e9b',
+      label: SPORT_GROUP_LABELS.get(key) || '\u2753 Egy\u00e9b',
       order: SPORT_GROUP_ORDER.has(key) ? SPORT_GROUP_ORDER.get(key) : Number.MAX_SAFE_INTEGER
     }))
-    .sort((a, b) => a.order - b.order || a.label.localeCompare(b.label, 'hu'));
+    .sort((a, b) => a.order - b.order);
 }
 
 function ensureSportSelectValue(sport) {
