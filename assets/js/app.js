@@ -51,6 +51,56 @@ const SPORTS = [
   "\u2753 Egy\u00e9b"
 ];
 
+const SPORT_GROUPS = [
+  { key: 'football', label: 'Labdar\u00fag\u00e1s' },
+  { key: 'basketball', label: 'Kos\u00e1rlabda' },
+  { key: 'tennis', label: 'Tenisz' },
+  { key: 'baseball', label: 'Baseball' },
+  { key: 'hockey', label: 'J\u00e9gkorong' },
+  { key: 'american-football', label: 'Amerikai foci' },
+  { key: 'australian-football', label: 'Ausztr\u00e1l futball' },
+  { key: 'cricket', label: 'Krikett' },
+  { key: 'volleyball', label: 'R\u00f6plabda' },
+  { key: 'combat', label: 'K\u00fczd\u0151sportok' },
+  { key: 'darts', label: 'Darts' },
+  { key: 'snooker', label: 'Snooker' },
+  { key: 'motorsport', label: 'Aut\u00f3sport' },
+  { key: 'horse-racing', label: 'L\u00f3verseny' },
+  { key: 'esport', label: 'eSport' },
+  { key: 'other', label: 'Egy\u00e9b' }
+];
+
+const SPORT_GROUP_ORDER = new Map(SPORT_GROUPS.map((sport, index) => [sport.key, index]));
+const SPORT_GROUP_LABELS = new Map(SPORT_GROUPS.map(sport => [sport.key, sport.label]));
+
+const SPORT_SUFFIX_LABELS = new Map([
+  ['mlb', 'MLB'],
+  ['mlb total', 'MLB - \u00f6sszes fut\u00e1s'],
+  ['mlb player prop', 'MLB - j\u00e1t\u00e9kospiac'],
+  ['nba', 'NBA'],
+  ['nba spread', 'NBA - hendikep'],
+  ['wnba', 'WNBA'],
+  ['wnba total', 'WNBA - \u00f6sszpontsz\u00e1m'],
+  ['wnba player prop', 'WNBA - j\u00e1t\u00e9kospiac'],
+  ['roland garros', 'Roland Garros'],
+  ['french open', 'Roland Garros'],
+  ['international friendly', 'nemzetk\u00f6zi bar\u00e1ts\u00e1gos'],
+  ['friendly', 'bar\u00e1ts\u00e1gos m\u00e9rk\u0151z\u00e9s'],
+  ['egypt premier league', 'Egyiptomi Premier League'],
+  ['copa libertadores', 'Copa Libertadores'],
+  ['copa sudamericana', 'Copa Sudamericana'],
+  ['portugal playoff', 'portug\u00e1l oszt\u00e1lyoz\u00f3'],
+  ['norway cup', 'norv\u00e9g kupa'],
+  ['poland 1. liga ht', 'lengyel 1. Liga - f\u00e9lid\u0151'],
+  ['rwanda premier league', 'ruandai Premier League'],
+  ['bulgaria', 'Bulg\u00e1ria'],
+  ['danish 1st division', 'd\u00e1n 1. oszt\u00e1ly'],
+  ['la liga', 'La Liga'],
+  ['mls', 'MLS'],
+  ['iihf vb', 'IIHF-vil\u00e1gbajnoks\u00e1g'],
+  ['stanley cup playoffs', 'Stanley-kupa r\u00e1j\u00e1tsz\u00e1s']
+]);
+
 // ===== DOM Elements Cache =====
 const DOM = {};
 
@@ -708,8 +758,6 @@ function refreshUI() {
   renderTipstersTable();
   refreshStatistics();
   updatePagination();
-  renderActiveFilters();
-  renderFinancialSummary();
 }
 
 function escapeHTML(value) {
@@ -788,7 +836,7 @@ function renderBetsTable() {
       </td>
       <td>
         <span class="table-mobile-label">Sport\u00e1g:</span>
-        ${escapeHTML(bet.sport)}
+        ${escapeHTML(formatSportLabel(bet.sport))}
       </td>
       <td>
         <span class="table-mobile-label">M\u00e9rk\u0151z\u00e9s / piac:</span>
@@ -895,10 +943,10 @@ function renderTipstersTable() {
       </td>
       <td>
         <strong style="font-size: 0.95rem;">${stats.total}</strong>
-        <div class="tipster-stats-mini">
-          <span class="stat-win" title="Nyert">${stats.wins} Ny</span>
-          <span class="stat-lose" title="Vesztett">${stats.losses} V</span>
-          <span class="stat-pending" title="F\u00fcgg\u0151ben">${stats.pending} F</span>
+        <div style="font-size: 0.8rem; margin-top: 2px; display: flex; gap: 8px; font-family: var(--font-main);">
+          <span class="text-success" style="font-weight: 600;" title="Nyert">${stats.wins} Ny</span>
+          <span class="text-error" style="font-weight: 600;" title="Vesztett">${stats.losses} V</span>
+          <span class="text-warning" style="font-weight: 600;" title="F\u00fcgg\u0151ben">${stats.pending} F</span>
         </div>
       </td>
       <td>${stats.winRate.toFixed(1)}%</td>
@@ -1063,136 +1111,7 @@ function clearFilters() {
   showNotification('Sz\u0171r\u0151k t\u00f6r\u00f6lve!', 'success');
 }
 
-function clearSingleFilter(filterKey) {
-  APP_STATE.filters[filterKey] = '';
-  // Sync dropdown/input elements
-  if (filterKey === 'tipster' && DOM.filterTipster) DOM.filterTipster.value = '';
-  if (filterKey === 'sport' && DOM.filterSport) DOM.filterSport.value = '';
-  if (filterKey === 'outcome' && DOM.filterOutcome) DOM.filterOutcome.value = '';
-  if (filterKey === 'dateFrom' && DOM.filterDateFrom) DOM.filterDateFrom.value = '';
-  if (filterKey === 'dateTo' && DOM.filterDateTo) DOM.filterDateTo.value = '';
-  if (filterKey === 'search') {
-    APP_STATE.filters.search = '';
-    if (DOM.betsSearch) DOM.betsSearch.value = '';
-  }
-  APP_STATE.currentPage = 1;
-  refreshUI();
-}
 
-function renderActiveFilters() {
-  let container = document.getElementById('activeFiltersBar');
-  const filtersActive = APP_STATE.filters.tipster || APP_STATE.filters.sport ||
-    APP_STATE.filters.outcome || APP_STATE.filters.dateFrom ||
-    APP_STATE.filters.dateTo || APP_STATE.filters.search;
-
-  if (!filtersActive) {
-    if (container) container.remove();
-    return;
-  }
-
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'activeFiltersBar';
-    container.className = 'active-filters-bar';
-    // Insert before the bets table search
-    const betsSection = document.getElementById('betsSection');
-    const searchGroup = betsSection?.querySelector('.form-group');
-    if (searchGroup) {
-      betsSection.insertBefore(container, searchGroup);
-    }
-  }
-
-  const filterLabels = {
-    tipster: 'Tippad\u00f3',
-    sport: 'Sport\u00e1g',
-    outcome: 'Eredm\u00e9ny',
-    dateFrom: 'D\u00e1tumt\u00f3l',
-    dateTo: 'D\u00e1tumig',
-    search: 'Keres\u00e9s'
-  };
-
-  const outcomeLabels = {
-    'pending': '\u23f3 F\u00fcgg\u0151ben',
-    'win': '\u2705 Nyert',
-    'lose': '\u274c Vesztett'
-  };
-
-  let html = '<span class="filter-label">\ud83d\udd0d Akt\u00edv sz\u0171r\u0151k:</span>';
-
-  Object.entries(APP_STATE.filters).forEach(([key, value]) => {
-    if (!value) return;
-    const label = filterLabels[key] || key;
-    let displayValue = value;
-    if (key === 'outcome') displayValue = outcomeLabels[value] || value;
-    html += `<span class="filter-tag">${label}: ${escapeHTML(displayValue)}<span class="filter-tag-remove" data-filter="${key}" title="Sz\u0171r\u0151 elt\u00e1vol\u00edt\u00e1sa">\u2715</span></span>`;
-  });
-
-  html += `<span class="filter-tag" style="background: linear-gradient(135deg, var(--error), var(--error-dark)); cursor: pointer;" id="clearAllFiltersTag" title="\u00d6sszes sz\u0171r\u0151 t\u00f6rl\u00e9se">\u00d6sszes t\u00f6rl\u00e9se \u2715</span>`;
-
-  container.innerHTML = html;
-
-  // Event delegation for remove buttons
-  container.onclick = (e) => {
-    const removeBtn = e.target.closest('.filter-tag-remove');
-    if (removeBtn) {
-      clearSingleFilter(removeBtn.dataset.filter);
-      return;
-    }
-    if (e.target.closest('#clearAllFiltersTag')) {
-      clearFilters();
-    }
-  };
-}
-
-function renderFinancialSummary() {
-  let container = document.getElementById('financialSummaryBar');
-  const filtered = getFilteredBets();
-
-  let totalWon = 0, totalLost = 0, totalPending = 0;
-
-  filtered.forEach(bet => {
-    if (bet.outcome === 'win') {
-      totalWon += (bet.betAmount * bet.odds) - bet.betAmount;
-    } else if (bet.outcome === 'lose') {
-      totalLost += bet.betAmount;
-    } else {
-      totalPending += bet.betAmount;
-    }
-  });
-
-  const netProfit = totalWon - totalLost;
-
-  if (!container) {
-    container = document.createElement('div');
-    container.id = 'financialSummaryBar';
-    container.className = 'profit-summary';
-    // Insert after the stats-grid
-    const dashboard = document.getElementById('dashboard');
-    const statsGrid = dashboard?.querySelector('.stats-grid');
-    if (statsGrid) {
-      statsGrid.after(container);
-    }
-  }
-
-  container.innerHTML = `
-    <div class="profit-summary-item profit-win">
-      <div class="summary-value">+${totalWon.toFixed(2)}</div>
-      <div class="summary-label">\u2705 Nyerem\u00e9ny</div>
-    </div>
-    <div class="profit-summary-item profit-loss">
-      <div class="summary-value">-${totalLost.toFixed(2)}</div>
-      <div class="summary-label">\u274c Vesztes\u00e9g</div>
-    </div>
-    <div class="profit-summary-item profit-pending">
-      <div class="summary-value">${totalPending.toFixed(2)}</div>
-      <div class="summary-label">\u23f3 F\u00fcgg\u0151ben</div>
-    </div>
-    <div class="profit-summary-item profit-net">
-      <div class="summary-value" style="color: ${netProfit >= 0 ? 'var(--success)' : 'var(--error)'}">${netProfit >= 0 ? '+' : ''}${netProfit.toFixed(2)}</div>
-      <div class="summary-label">\ud83d\udcb0 Nett\u00f3</div>
-    </div>
-  `;
-}
 
 function handleSearch() {
   APP_STATE.filters.search = DOM.betsSearch.value.toLowerCase();
@@ -1204,12 +1123,7 @@ function getFilteredBets() {
   return APP_STATE.bets.filter(bet => {
     if (APP_STATE.filters.tipster && bet.tipster !== APP_STATE.filters.tipster) return false;
     if (APP_STATE.filters.sport) {
-      // Support both exact match and partial match (emoji-stripped base sport)
-      const filterSport = APP_STATE.filters.sport.toLowerCase();
-      const betSport = (bet.sport || '').toLowerCase();
-      if (betSport !== filterSport && !betSport.includes(filterSport) && !filterSport.includes(betSport)) {
-        return false;
-      }
+      if (getSportGroupKey(bet.sport) !== APP_STATE.filters.sport) return false;
     }
     if (APP_STATE.filters.outcome && bet.outcome !== APP_STATE.filters.outcome) return false;
 
@@ -1227,7 +1141,7 @@ function getFilteredBets() {
 
     if (APP_STATE.filters.search) {
       const searchTerm = APP_STATE.filters.search;
-      const searchableText = `${bet.tipster} ${bet.team} ${bet.sport} ${bet.notes || ''}`.toLowerCase();
+      const searchableText = `${bet.tipster} ${bet.team} ${bet.sport} ${formatSportLabel(bet.sport)} ${bet.notes || ''}`.toLowerCase();
       if (!searchableText.includes(searchTerm)) return false;
     }
 
@@ -1396,16 +1310,22 @@ function calculateTipsterStats(tipsterName) {
 function calculateSportStats() {
   const sportStats = {};
 
-  SPORTS.forEach(sport => {
-    sportStats[sport] = { total: 0, wins: 0, losses: 0, pending: 0, profit: 0 };
-  });
-
   getFilteredBets().forEach(bet => {
-    if (!sportStats[bet.sport]) {
-      sportStats[bet.sport] = { total: 0, wins: 0, losses: 0, pending: 0, profit: 0 };
+    const groupKey = getSportGroupKey(bet.sport);
+    const sport = SPORT_GROUP_LABELS.get(groupKey) || 'Egy\u00e9b';
+
+    if (!sportStats[sport]) {
+      sportStats[sport] = {
+        key: groupKey,
+        total: 0,
+        wins: 0,
+        losses: 0,
+        pending: 0,
+        profit: 0
+      };
     }
 
-    const stats = sportStats[bet.sport];
+    const stats = sportStats[sport];
     stats.total++;
 
     if (bet.outcome === 'win') {
@@ -1471,7 +1391,7 @@ function generateSportsStatsHTML() {
   const sportStats = calculateSportStats();
   let html = '<div class="grid grid-2 gap-2">';
 
-  Object.entries(sportStats).forEach(([sport, stats]) => {
+  getSortedSportStats(sportStats).forEach(([sport, stats]) => {
     if (stats.total === 0) return;
 
     const winRate = (stats.wins / (stats.wins + stats.losses) * 100) || 0;
@@ -1621,7 +1541,7 @@ function updateSportChart() {
   const labels = [];
   const data = [];
 
-  Object.entries(sportStats).forEach(([sport, stats]) => {
+  getSortedSportStats(sportStats).forEach(([sport, stats]) => {
     if (stats.total > 0) {
       labels.push(sport);
       data.push(stats.total);
@@ -2163,11 +2083,125 @@ function populateSelects() {
 
   // Sports filter - collect actual unique sport values from bets
   DOM.filterSport.innerHTML = '<option value="">Mind</option>';
-  const actualSports = [...new Set(APP_STATE.bets.map(b => b.sport).filter(Boolean))].sort();
-  actualSports.forEach(sport => {
-    const count = APP_STATE.bets.filter(b => b.sport === sport).length;
-    DOM.filterSport.innerHTML += `<option value="${escapeHTML(sport)}">${escapeHTML(sport)} (${count})</option>`;
+  getSportFilterOptions().forEach(sport => {
+    DOM.filterSport.innerHTML += `<option value="${sport.key}">${escapeHTML(sport.label)} (${sport.count})</option>`;
   });
+  if (APP_STATE.filters.sport) DOM.filterSport.value = APP_STATE.filters.sport;
+}
+
+function getSportFilterOptions() {
+  const counts = new Map();
+  APP_STATE.bets.forEach(bet => {
+    const key = getSportGroupKey(bet.sport);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  });
+
+  return Array.from(counts.entries())
+    .map(([key, count]) => ({
+      key,
+      count,
+      label: SPORT_GROUP_LABELS.get(key) || 'Egy\u00e9b',
+      order: SPORT_GROUP_ORDER.has(key) ? SPORT_GROUP_ORDER.get(key) : Number.MAX_SAFE_INTEGER
+    }))
+    .sort((a, b) => a.order - b.order || a.label.localeCompare(b.label, 'hu'));
+}
+
+function ensureSportSelectValue(sport) {
+  const value = String(sport || '').trim();
+  if (!value || !DOM.sportSelect) return;
+  if ([...DOM.sportSelect.options].some(option => option.value === value)) return;
+
+  const option = document.createElement('option');
+  option.value = value;
+  option.textContent = formatSportLabel(value);
+  DOM.sportSelect.appendChild(option);
+}
+
+function getSportGroupKey(sport) {
+  const text = normalizeSportText(sport);
+  if (!text) return 'other';
+
+  if (/\bafl\b/.test(text) || text.includes('ausztral futball') || text.includes('australian football')) return 'australian-football';
+  if (text.includes('baseball') || /\bmlb\b/.test(text)) return 'baseball';
+  if (text.includes('tenisz') || text.includes('tennis') || text.includes('roland garros') || text.includes('french open')) return 'tennis';
+  if (text.includes('kosarlabda') || text.includes('basketball') || /\bnba\b/.test(text) || /\bwnba\b/.test(text)) return 'basketball';
+  if (text.includes('jegkorong') || text.includes('hockey') || /\bnhl\b/.test(text) || /\biihf\b/.test(text)) return 'hockey';
+  if (text.includes('amerikai foci') || text.includes('american football') || /\bnfl\b/.test(text)) return 'american-football';
+  if (
+    text.includes('labdarugas') ||
+    text.includes('football') ||
+    text.includes('footbal') ||
+    text.includes('futball') ||
+    text.includes('futbal') ||
+    text.includes('fotball') ||
+    text.includes('fotbal') ||
+    text.includes('fotba') ||
+    text.includes('foci') ||
+    text.includes('soccer')
+  ) return 'football';
+  if (text.includes('krikett') || text.includes('cricket') || /\bipl\b/.test(text)) return 'cricket';
+  if (text.includes('roplabda') || text.includes('volleyball')) return 'volleyball';
+  if (text.includes('okolvivas') || text.includes('boxing') || text.includes('mma') || text.includes('ufc')) return 'combat';
+  if (text.includes('darts')) return 'darts';
+  if (text.includes('snooker')) return 'snooker';
+  if (text.includes('forma 1') || text.includes('formula 1') || text.includes('f1') || text.includes('motorsport')) return 'motorsport';
+  if (text.includes('loverseny') || text.includes('horse')) return 'horse-racing';
+  if (text.includes('esport') || text.includes('e-sport')) return 'esport';
+  return 'other';
+}
+
+function formatSportLabel(sport) {
+  const raw = String(sport || '').trim();
+  const groupKey = getSportGroupKey(raw);
+  const groupLabel = SPORT_GROUP_LABELS.get(groupKey) || 'Egy\u00e9b';
+  const suffix = getSportSuffix(raw);
+  if (!suffix) {
+    const directLabel = SPORT_SUFFIX_LABELS.get(normalizeSportText(raw));
+    return directLabel ? `${groupLabel} - ${directLabel}` : groupLabel;
+  }
+
+  const suffixKey = normalizeSportText(suffix);
+  const suffixLabel = SPORT_SUFFIX_LABELS.get(suffixKey) || toHungarianSportSuffix(suffix);
+  return `${groupLabel} - ${suffixLabel}`;
+}
+
+function getSortedSportStats(sportStats) {
+  return Object.entries(sportStats).sort(([, a], [, b]) => {
+    const aOrder = SPORT_GROUP_ORDER.has(a.key) ? SPORT_GROUP_ORDER.get(a.key) : Number.MAX_SAFE_INTEGER;
+    const bOrder = SPORT_GROUP_ORDER.has(b.key) ? SPORT_GROUP_ORDER.get(b.key) : Number.MAX_SAFE_INTEGER;
+    return aOrder - bOrder;
+  });
+}
+
+function getSportSuffix(sport) {
+  const raw = String(sport || '').trim();
+  const parts = raw.split(/\s[-–—]\s/).map(part => part.trim()).filter(Boolean);
+  if (parts.length < 2) return '';
+  return parts.slice(1).join(' - ');
+}
+
+function toHungarianSportSuffix(suffix) {
+  return String(suffix || '')
+    .trim()
+    .replace(/\bLabdarugas\b/g, 'Labdar\u00fag\u00e1s')
+    .replace(/\bKosarlabda\b/g, 'Kos\u00e1rlabda')
+    .replace(/\bJegkorong\b/g, 'J\u00e9gkorong')
+    .replace(/\bAmerikai Foci\b/g, 'Amerikai foci')
+    .replace(/\bFriendly\b/g, 'bar\u00e1ts\u00e1gos m\u00e9rk\u0151z\u00e9s')
+    .replace(/\bPlayoff\b/g, 'r\u00e1j\u00e1tsz\u00e1s')
+    .replace(/\bTotal\b/g, '\u00f6sszes pont/fut\u00e1s')
+    .replace(/\bPlayer Prop\b/g, 'j\u00e1t\u00e9kospiac')
+    .replace(/\bHT\b/g, 'f\u00e9lid\u0151');
+}
+
+function normalizeSportText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^\w\s.-]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase();
 }
 
 function getSortedTipsterNames() {
@@ -2339,6 +2373,7 @@ function editBet(betId) {
   if (!bet) return;
 
   DOM.tipsterSelect.value = bet.tipster;
+  ensureSportSelectValue(bet.sport);
   DOM.sportSelect.value = bet.sport;
   DOM.teamInput.value = bet.team;
   DOM.betAmountInput.value = bet.betAmount;
