@@ -708,6 +708,8 @@ function refreshUI() {
   renderTipstersTable();
   refreshStatistics();
   updatePagination();
+  renderActiveFilters();
+  renderFinancialSummary();
 }
 
 function escapeHTML(value) {
@@ -893,10 +895,10 @@ function renderTipstersTable() {
       </td>
       <td>
         <strong style="font-size: 0.95rem;">${stats.total}</strong>
-        <div style="font-size: 0.8rem; margin-top: 2px; display: flex; gap: 8px; font-family: var(--font-main);">
-          <span class="text-success" style="font-weight: 600;" title="Nyert">${stats.wins} Ny</span>
-          <span class="text-error" style="font-weight: 600;" title="Vesztett">${stats.losses} V</span>
-          <span class="text-warning" style="font-weight: 600;" title="F\u00fcgg\u0151ben">${stats.pending} F</span>
+        <div class="tipster-stats-mini">
+          <span class="stat-win" title="Nyert">${stats.wins} Ny</span>
+          <span class="stat-lose" title="Vesztett">${stats.losses} V</span>
+          <span class="stat-pending" title="F\u00fcgg\u0151ben">${stats.pending} F</span>
         </div>
       </td>
       <td>${stats.winRate.toFixed(1)}%</td>
@@ -1059,6 +1061,137 @@ function clearFilters() {
   APP_STATE.currentPage = 1;
   refreshUI();
   showNotification('Sz\u0171r\u0151k t\u00f6r\u00f6lve!', 'success');
+}
+
+function clearSingleFilter(filterKey) {
+  APP_STATE.filters[filterKey] = '';
+  // Sync dropdown/input elements
+  if (filterKey === 'tipster' && DOM.filterTipster) DOM.filterTipster.value = '';
+  if (filterKey === 'sport' && DOM.filterSport) DOM.filterSport.value = '';
+  if (filterKey === 'outcome' && DOM.filterOutcome) DOM.filterOutcome.value = '';
+  if (filterKey === 'dateFrom' && DOM.filterDateFrom) DOM.filterDateFrom.value = '';
+  if (filterKey === 'dateTo' && DOM.filterDateTo) DOM.filterDateTo.value = '';
+  if (filterKey === 'search') {
+    APP_STATE.filters.search = '';
+    if (DOM.betsSearch) DOM.betsSearch.value = '';
+  }
+  APP_STATE.currentPage = 1;
+  refreshUI();
+}
+
+function renderActiveFilters() {
+  let container = document.getElementById('activeFiltersBar');
+  const filtersActive = APP_STATE.filters.tipster || APP_STATE.filters.sport ||
+    APP_STATE.filters.outcome || APP_STATE.filters.dateFrom ||
+    APP_STATE.filters.dateTo || APP_STATE.filters.search;
+
+  if (!filtersActive) {
+    if (container) container.remove();
+    return;
+  }
+
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'activeFiltersBar';
+    container.className = 'active-filters-bar';
+    // Insert before the bets table search
+    const betsSection = document.getElementById('betsSection');
+    const searchGroup = betsSection?.querySelector('.form-group');
+    if (searchGroup) {
+      betsSection.insertBefore(container, searchGroup);
+    }
+  }
+
+  const filterLabels = {
+    tipster: 'Tippad\u00f3',
+    sport: 'Sport\u00e1g',
+    outcome: 'Eredm\u00e9ny',
+    dateFrom: 'D\u00e1tumt\u00f3l',
+    dateTo: 'D\u00e1tumig',
+    search: 'Keres\u00e9s'
+  };
+
+  const outcomeLabels = {
+    'pending': '\u23f3 F\u00fcgg\u0151ben',
+    'win': '\u2705 Nyert',
+    'lose': '\u274c Vesztett'
+  };
+
+  let html = '<span class="filter-label">\ud83d\udd0d Akt\u00edv sz\u0171r\u0151k:</span>';
+
+  Object.entries(APP_STATE.filters).forEach(([key, value]) => {
+    if (!value) return;
+    const label = filterLabels[key] || key;
+    let displayValue = value;
+    if (key === 'outcome') displayValue = outcomeLabels[value] || value;
+    html += `<span class="filter-tag">${label}: ${escapeHTML(displayValue)}<span class="filter-tag-remove" data-filter="${key}" title="Sz\u0171r\u0151 elt\u00e1vol\u00edt\u00e1sa">\u2715</span></span>`;
+  });
+
+  html += `<span class="filter-tag" style="background: linear-gradient(135deg, var(--error), var(--error-dark)); cursor: pointer;" id="clearAllFiltersTag" title="\u00d6sszes sz\u0171r\u0151 t\u00f6rl\u00e9se">\u00d6sszes t\u00f6rl\u00e9se \u2715</span>`;
+
+  container.innerHTML = html;
+
+  // Event delegation for remove buttons
+  container.onclick = (e) => {
+    const removeBtn = e.target.closest('.filter-tag-remove');
+    if (removeBtn) {
+      clearSingleFilter(removeBtn.dataset.filter);
+      return;
+    }
+    if (e.target.closest('#clearAllFiltersTag')) {
+      clearFilters();
+    }
+  };
+}
+
+function renderFinancialSummary() {
+  let container = document.getElementById('financialSummaryBar');
+  const filtered = getFilteredBets();
+
+  let totalWon = 0, totalLost = 0, totalPending = 0;
+
+  filtered.forEach(bet => {
+    if (bet.outcome === 'win') {
+      totalWon += (bet.betAmount * bet.odds) - bet.betAmount;
+    } else if (bet.outcome === 'lose') {
+      totalLost += bet.betAmount;
+    } else {
+      totalPending += bet.betAmount;
+    }
+  });
+
+  const netProfit = totalWon - totalLost;
+
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'financialSummaryBar';
+    container.className = 'profit-summary';
+    // Insert after the stats-grid
+    const dashboard = document.getElementById('dashboard');
+    const statsGrid = dashboard?.querySelector('.stats-grid');
+    if (statsGrid) {
+      statsGrid.after(container);
+    }
+  }
+
+  container.innerHTML = `
+    <div class="profit-summary-item profit-win">
+      <div class="summary-value">+${totalWon.toFixed(2)}</div>
+      <div class="summary-label">\u2705 Nyerem\u00e9ny</div>
+    </div>
+    <div class="profit-summary-item profit-loss">
+      <div class="summary-value">-${totalLost.toFixed(2)}</div>
+      <div class="summary-label">\u274c Vesztes\u00e9g</div>
+    </div>
+    <div class="profit-summary-item profit-pending">
+      <div class="summary-value">${totalPending.toFixed(2)}</div>
+      <div class="summary-label">\u23f3 F\u00fcgg\u0151ben</div>
+    </div>
+    <div class="profit-summary-item profit-net">
+      <div class="summary-value" style="color: ${netProfit >= 0 ? 'var(--success)' : 'var(--error)'}">${netProfit >= 0 ? '+' : ''}${netProfit.toFixed(2)}</div>
+      <div class="summary-label">\ud83d\udcb0 Nett\u00f3</div>
+    </div>
+  `;
 }
 
 function handleSearch() {

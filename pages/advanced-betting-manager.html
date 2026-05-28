@@ -94,12 +94,8 @@
         <div class="stat-card">
           <div class="stat-value" id="totalBetsCount">0</div>
           <div class="stat-label">Összes Fogadás</div>
-          <div class="stat-change positive">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-              <polyline points="17 6 23 6 23 12"></polyline>
-            </svg>
-            <span>+12% az elmúlt hónapban</span>
+          <div class="stat-change positive" id="betsCountChange">
+            <span>Számítás alatt...</span>
           </div>
         </div>
         
@@ -128,7 +124,21 @@
         </div>
       </div>
 
-      <!-- Charts removed as requested -->
+      <!-- Dashboard Charts -->
+      <div class="dashboard-charts" id="dashboardCharts">
+        <div class="chart-card">
+          <h4>Profit Idővonal</h4>
+          <div class="chart-container">
+            <canvas id="profitChart"></canvas>
+          </div>
+        </div>
+        <div class="chart-card">
+          <h4>Sportág Eloszlás</h4>
+          <div class="chart-container">
+            <canvas id="sportChart"></canvas>
+          </div>
+        </div>
+      </div>
     </section>
 
     <!-- Add New Bet Section -->
