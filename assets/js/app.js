@@ -1203,7 +1203,14 @@ function handleSearch() {
 function getFilteredBets() {
   return APP_STATE.bets.filter(bet => {
     if (APP_STATE.filters.tipster && bet.tipster !== APP_STATE.filters.tipster) return false;
-    if (APP_STATE.filters.sport && bet.sport !== APP_STATE.filters.sport) return false;
+    if (APP_STATE.filters.sport) {
+      // Support both exact match and partial match (emoji-stripped base sport)
+      const filterSport = APP_STATE.filters.sport.toLowerCase();
+      const betSport = (bet.sport || '').toLowerCase();
+      if (betSport !== filterSport && !betSport.includes(filterSport) && !filterSport.includes(betSport)) {
+        return false;
+      }
+    }
     if (APP_STATE.filters.outcome && bet.outcome !== APP_STATE.filters.outcome) return false;
 
     if (APP_STATE.filters.dateFrom) {
@@ -2148,13 +2155,18 @@ function populateSelects() {
     DOM.filterTipster.innerHTML += `<option value="${name}">${name}</option>`;
   });
 
-  // Sports
+  // Sports - form select uses predefined SPORTS for new bets
   DOM.sportSelect.innerHTML = '<option value="">V\u00e1lasszon sport\u00e1gat...</option>';
-  DOM.filterSport.innerHTML = '<option value="">Mind</option>';
-
   SPORTS.forEach(sport => {
     DOM.sportSelect.innerHTML += `<option value="${sport}">${sport}</option>`;
-    DOM.filterSport.innerHTML += `<option value="${sport}">${sport}</option>`;
+  });
+
+  // Sports filter - collect actual unique sport values from bets
+  DOM.filterSport.innerHTML = '<option value="">Mind</option>';
+  const actualSports = [...new Set(APP_STATE.bets.map(b => b.sport).filter(Boolean))].sort();
+  actualSports.forEach(sport => {
+    const count = APP_STATE.bets.filter(b => b.sport === sport).length;
+    DOM.filterSport.innerHTML += `<option value="${escapeHTML(sport)}">${escapeHTML(sport)} (${count})</option>`;
   });
 }
 
